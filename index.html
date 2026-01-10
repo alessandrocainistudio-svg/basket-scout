@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Basket Scout Pro - Cloud Sync</title>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        /* [I TUOI STILI ORIGINALI INVARIATI] */
+        body { font-family: sans-serif; margin: 0; padding: 10px; background: #121212; color: white; touch-action: manipulation; }
+        .scoreboard { display: grid; grid-template-columns: 1fr 0.8fr 1fr; background: #000; padding: 10px; border-radius: 12px; border: 2px solid #333; margin-bottom: 10px; text-align: center; align-items: center; }
+        .score-box h1 { margin: 0; font-size: 42px; color: #ffeb3b; }
+        .bonus-on { color: #ff4444; font-weight: bold; font-size: 14px; margin-top: 2px; }
+        .to-container { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
+        .dot { width: 12px; height: 12px; border: 1px solid #555; border-radius: 50%; background: #333; }
+        .dot.filled { background: #ff9800; box-shadow: 0 0 5px #ff9800; }
+        .team-name { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #aaa; }
+        .team-name.is-us { color: #7fff7f; }
+        #liberi-sequenza { display: flex; justify-content: center; gap: 15px; margin-bottom: 15px; min-height: 40px; font-size: 32px; }
+        .opp-points-bar { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; align-items: center; }
+        .opp-label { font-size: 11px; color: #ff7f7f; font-weight: bold; text-align: center; line-height: 1.1; }
+        .btn-opp { padding: 12px; background: #331a1a; color: #ff7f7f; border: 1px solid #663333; border-radius: 8px; font-weight: bold; font-size: 16px; }
+        .grid-giocatori { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
+        .btn-giocatore { padding: 20px 0; background: #2a2a2a; color: white; border: 2px solid #444; border-radius: 12px; font-size: 20px; font-weight: bold; position: relative; }
+        .btn-giocatore.in-campo { border-color: #28a745; background: #1e3d24; }
+        .btn-giocatore.selected { background: #ff9800 !important; color: black; border-color: white; }
+        .pts-badge { position: absolute; top: 4px; left: 8px; color: #7fff7f; font-size: 14px; }
+        .foul-badge { position: absolute; bottom: 4px; right: 8px; background: #ff4444; color: white; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+        .foul-out { opacity: 0.3 !important; pointer-events: none !important; filter: grayscale(1); }
+        .grid-azioni { display: none; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .btn-azione { padding: 18px; font-size: 14px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; color: black; display: flex; align-items: center; justify-content: center; }
+        .full-width { grid-column: span 2; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; padding: 15px; }
+        .container-modal { background: #1a1a1a; padding: 20px; border-radius: 15px; width: 100%; max-width: 420px; border: 1px solid #333; text-align: center; }
+        .active-out { background: #dc3545 !important; border-color: white !important; color: white !important; }
+        .active-in { background: #28a745 !important; border-color: white !important; color: white !important; }
+        #mappaCampo { width: 310px; height: 240px; background: #d2a679; border: 2px solid white; border-top: none; position: relative; margin: 0 auto; overflow: hidden; }
+        .arco-tre { position: absolute; top: -110px; left: 20px; right: 20px; height: 270px; border: 2px solid white; border-radius: 0 0 160px 160px; }
+        .tre-lato-l, .tre-lato-r { position: absolute; top: 0; width: 2px; height: 30px; background: white; }
+        .pitturato { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100px; height: 120px; border: 2px solid white; background: rgba(255,255,255,0.05); }
+        .lunetta { position: absolute; top: 85px; left: 50%; transform: translateX(-50%); width: 100px; height: 70px; border: 2px solid white; border-radius: 50%; }
+        .canestro { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border: 2px solid #ff9800; border-radius: 50%; z-index: 5; }
+        .tabellone { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 40px; height: 2px; background: white; }
+        .punto-tiro { position: absolute; width: 18px; height: 18px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); z-index: 100; }
+        .label-tiro { position: absolute; top: -22px; left: 50%; transform: translateX(-50%); background: black; color: white; padding: 2px 4px; border-radius: 3px; font-size: 10px; font-weight: bold; }
+        .bg-yell { background: #ffeb3b; } .bg-grey { background: #e0e0e0; } .bg-red { background: #ff7f7f; }
+        .bg-green { background: #7fff7f; } .bg-blue-l { background: #add8e6; } .bg-org { background: #ffa07a; }
+        .bg-lime { background: #98fb98; } .bg-white { background: white; border: 2px solid #ff9800; }
+        .sub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 10px 0; }
+        .btn-sub { padding: 10px 0; background: #444; color: white; border: 2px solid #666; border-radius: 5px; font-weight: bold; }
+        .cloud-info { font-size: 10px; color: #7fff7f; margin-bottom: 5px; }
+    </style>
+</head>
+<body onload="apriModal('modalCloud')">
+
+    <div class="scoreboard">
+        <div class="score-box">
+            <h1 id="scoreHome">0</h1>
+            <div class="team-name" id="nameH">CASA</div>
+            <div style="font-size:12px;">FALLI: <span id="fHome">0</span></div>
+            <div id="bHome" class="bonus-on" style="display:none">BONUS</div>
+            <div id="dotsHome" class="to-container"></div>
+            <button onclick="addTO('Home')" style="font-size:10px; margin-top:5px;">TIMEOUT</button>
+        </div>
+        <div>
+            <div id="labelQuarto" style="font-weight: bold; color: #ff9800; font-size: 20px;">Q1</div>
+            <div id="syncStatus" class="cloud-info">DISCONNESSO</div>
+            <button id="btnStato" onclick="toggleQuarto()" style="background:#28a745; color:white; border:none; padding:10px; border-radius:5px; margin-top:5px; font-weight:bold;">INIZIA</button>
+        </div>
+        <div class="score-box">
+            <h1 id="scoreAway">0</h1>
+            <div class="team-name" id="nameA">TRASFERTA</div>
+            <div style="font-size:12px;">FALLI: <span id="fAway">0</span></div>
+            <div id="bAway" class="bonus-on" style="display:none">BONUS</div>
+            <div id="dotsAway" class="to-container"></div>
+            <button onclick="addTO('Away')" style="font-size:10px; margin-top:5px;">TIMEOUT</button>
+        </div>
+    </div>
+
+    <div class="opp-points-bar">
+        <div class="opp-label">PUNTI<br>AVVERSARI</div>
+        <button class="btn-opp" onclick="addOppPoint(1)">+1</button>
+        <button class="btn-opp" onclick="addOppPoint(2)">+2</button>
+        <button class="btn-opp" onclick="addOppPoint(3)">+3</button>
+    </div>
+
+    <div class="grid-giocatori" id="roster">
+        <script>
+            const roster = [0, 4, 5, 7, 8, 10, 12, 15, 23, 30, 33, 99];
+            roster.forEach(n => {
+                document.write(`<button class="btn-giocatore" id="p${n}" onclick="selezionaGiocatore('${n}')">
+                    <span class="pts-badge" id="pts${n}">0</span>
+                    ${n}
+                    <span class="foul-badge" id="foul${n}">0</span>
+                </button>`);
+            });
+        </script>
+    </div>
+
+    <div class="grid-azioni" id="azioni">
+        <button class="btn-azione full-width bg-yell" onclick="if(selP) apriModal('modalCampo')">🏀 TIRO</button>
+        <button class="btn-azione full-width bg-grey" onclick="if(selP) apriModalLibero()">🗑️ TIRI LIBERI</button>
+        <button class="btn-azione bg-red" onclick="registraFalloFatto()">🛑 FALLO FATTO</button>
+        <button class="btn-azione bg-green" onclick="if(selP) apriModal('modalFalloSubito')">🤝 FALLO SUBITO</button>
+        <button class="btn-azione bg-blue-l" onclick="logQuick('Rimbalzo Dif', '#add8e6')">⬇️ R. DIF</button>
+        <button class="btn-azione bg-blue-l" onclick="logQuick('Rimbalzo Off', '#add8e6')">⬆️ R. OFF</button>
+        <button class="btn-azione bg-org" onclick="logQuick('Palla Persa', '#ffa07a')">⚠️ PERSA</button>
+        <button class="btn-azione bg-lime" onclick="logQuick('Palla Recuperata', '#98fb98')">🛡️ RECUPERO</button>
+        <button class="btn-azione full-width bg-white" onclick="apriModalCambio()">🔄 CAMBIO</button>
+        <button class="btn-azione full-width" style="background:#4caf50; color:white" onclick="esportaExcel()">📥 SCARICA EXCEL</button>
+        <button class="btn-azione full-width" style="background:#333; color:#aaa" onclick="annullaUltimaAzione()">↩️ ANNULLA</button>
+    </div>
+
+    <div id="modalCloud" class="modal" style="display:flex;">
+        <div class="container-modal">
+            <h3>ACCESSO CLOUD 🌐</h3>
+            <p style="font-size:12px; color:#888;">Inserisci un nome per la partita per salvarla online e riprenderla su altri dispositivi.</p>
+            <input type="text" id="gameId" style="width:90%; padding:12px; margin:10px 0; background:#222; color:white; border:1px solid #444;" placeholder="Es: FINALE_U17_2024">
+            <button class="btn-azione full-width bg-green" onclick="connettiCloud()">CONNETTI O CREA</button>
+        </div>
+    </div>
+
+    <div id="modalConfig" class="modal"><div class="container-modal"><h3>GARA</h3><input type="text" id="inputHome" style="width:90%; padding:12px; margin:10px 0; background:#222; color:white;" placeholder="CASA"><input type="text" id="inputAway" style="width:90%; padding:12px; margin:10px 0; background:#222; color:white;" placeholder="TRASFERTA"><button class="btn-azione full-width bg-green" onclick="salvaConfig()">INIZIA</button></div></div>
+    <div id="modalCambio" class="modal"> <div class="container-modal"><h3>CAMBIO 🔄</h3><input type="number" id="minutoCambio" class="input-minuto" placeholder="340" oninput="checkC()"><div id="outG" class="sub-grid"></div><div id="inG" class="sub-grid"></div><button id="confCambio" disabled onclick="eseguiCambio()" style="width:100%; padding:15px; border-radius:8px; background:grey;">CONFERMA</button><button onclick="chiudiModal('modalCambio')" style="margin-top:10px; background:none; border:none; color:white;">ANNULLA</button></div></div>
+    <div id="modalFineQuarto" class="modal"><div class="container-modal"><h2>FINE Q<span id="qDisplay">1</span></h2><button class="btn-azione full-width bg-green" onclick="prossimoQuarto()">SUCCESSIVO</button></div></div>
+    <div id="modalCampo" class="modal"><div class="container-modal"><div id="mappaCampo" onclick="segnaPunto(event)"><div class="arco-tre"></div><div class="pitturato"></div><div class="canestro"></div></div><div style="display:flex; gap:10px;"><button style="flex:1; padding:20px; background:green; color:white;" onclick="regTiro('SEGNATO')">SI</button><button style="flex:1; padding:20px; background:red; color:white;" onclick="regTiro('SBAGLIATO')">NO</button></div></div></div>
+    <div id="modalTitolari" class="modal"><div class="container-modal"><h3>5 TITOLARI</h3><div class="grid-giocatori" id="titolariGrid"></div><button id="confirmTitolari" disabled onclick="confermaTitolari()" style="width:100%; padding:15px;">CONFERMA</button></div></div>
+    <div id="modalFalloSubito" class="modal"><div class="container-modal"><h3>FALLO SUBITO</h3><button class="btn-azione full-width bg-grey" onclick="concludiFalloSubito(false)">RIMESSA</button><button class="btn-azione full-width bg-yell" onclick="concludiFalloSubito(true)">LIBERI</button></div></div>
+    <div id="modalLibero" class="modal"><div class="container-modal"><h3>LIBERI</h3><div id="liberi-sequenza"></div><button onclick="regLib('SEGNATO')">✅</button><button onclick="regLib('X')">❌</button><button onclick="chiudiModal('modalLibero')">CHIUDI</button></div></div>
+
+    <script>
+        // --- CONFIGURAZIONE FIREBASE (DA COMPLETARE) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
+            authDomain: "basket-reggello-scout.firebaseapp.com",
+            databaseURL: "https://basket-reggello-scout-default-rtdb.firebaseio.com",
+            projectId: "basket-reggello-scout",
+            storageBucket: "basket-reggello-scout.firebasestorage.app",
+            messagingSenderId: "395815946220",
+            appId: "1:395815946220:web:68c00b4c7f2da1754722c9"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let gameRef = null;
+
+        // --- VARIABILI ORIGINALI ---
+        let nQ = 1, sH = 0, sA = 0, fH = 0, fA = 0, toH = 0, toA = 0;
+        let teamUs = 'H', nameH = "CASA", nameA = "TRASFERTA";
+        let inC = [], stats = [], selP = null, lX, lY, currentVal = 2;
+        let pF = {}, pP = {};
+        roster.forEach(n => { pF[n]=0; pP[n]=0; });
+
+        // --- FUNZIONE DI SINCRONIZZAZIONE (NUOVA) ---
+        function connettiCloud() {
+            const id = document.getElementById('gameId').value.trim();
+            if(!id) return alert("Inserisci un nome partita!");
+            
+            gameRef = db.ref('games/' + id);
+            
+            // Ascolta cambiamenti dal Cloud
+            gameRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    // Carica dati dal cloud nell'app locale
+                    nQ = data.nQ; sH = data.sH; sA = data.sA; fH = data.fH; fA = data.fA;
+                    toH = data.toH; toA = data.toA; nameH = data.nameH; nameA = data.nameA;
+                    inC = data.inC || []; stats = data.stats || []; pF = data.pF || pF; pP = data.pP || pP;
+                    
+                    document.getElementById('nameH').innerText = nameH;
+                    document.getElementById('nameA').innerText = nameA;
+                    document.getElementById('labelQuarto').innerText = "Q" + nQ;
+                    document.getElementById('syncStatus').innerText = "CLOUD SYNC: " + id;
+                    
+                    if(inC.length === 5) {
+                        document.getElementById('azioni').style.display = 'grid';
+                        document.getElementById('btnStato').innerText = "FINE Q" + nQ;
+                        document.getElementById('btnStato').style.background = "#dc3545";
+                    }
+                    updateUI();
+                } else {
+                    // Partita nuova, apri config
+                    apriModal('modalConfig');
+                }
+                chiudiModal('modalCloud');
+            });
+        }
+
+        function cloudSave() {
+            if(!gameRef) return;
+            gameRef.set({ nQ, sH, sA, fH, fA, toH, toA, teamUs, nameH, nameA, inC, stats, pF, pP });
+        }
+
+        // --- TUE FUNZIONI ORIGINALI (Aggiunta solo chiamata cloudSave) ---
+        function salvaConfig() {
+            nameH = document.getElementById('inputHome').value || "CASA";
+            nameA = document.getElementById('inputAway').value || "TRASFERTA";
+            document.getElementById('nameH').innerText = nameH;
+            document.getElementById('nameA').innerText = nameA;
+            chiudiModal('modalConfig');
+            cloudSave();
+        }
+
+        function toggleQuarto() {
+            if (document.getElementById('btnStato').innerText.includes("INIZIA")) apriModalTitolari();
+            else { document.getElementById('qDisplay').innerText = nQ; apriModal('modalFineQuarto'); }
+        }
+
+        function prossimoQuarto() {
+            nQ++; fH = 0; fA = 0;
+            if (nQ === 3) { toH = 0; toA = 0; }
+            document.getElementById('labelQuarto').innerText = "Q" + nQ;
+            document.getElementById('btnStato').innerText = "INIZIA Q" + nQ;
+            document.getElementById('btnStato').style.background = "#28a745";
+            document.getElementById('azioni').style.display = 'none';
+            chiudiModal('modalFineQuarto');
+            updateUI(); cloudSave();
+        }
+
+        function apriModalTitolari() {
+            const grid = document.getElementById('titolariGrid'); grid.innerHTML = "";
+            roster.forEach(n => {
+                const b = document.createElement('button'); b.className = 'btn-sub'; b.innerText = n;
+                if(inC.includes(n.toString())) b.classList.add('active-in');
+                b.onclick = () => { b.classList.toggle('active-in'); checkTit(); };
+                grid.appendChild(b);
+            });
+            checkTit(); apriModal('modalTitolari');
+        }
+
+        function checkTit() {
+            const count = document.querySelectorAll('#titolariGrid .active-in').length;
+            const c = document.getElementById('confirmTitolari');
+            c.disabled = count !== 5; c.style.background = count === 5 ? "green" : "grey";
+        }
+
+        function confermaTitolari() {
+            inC = Array.from(document.querySelectorAll('#titolariGrid .active-in')).map(b => b.innerText);
+            chiudiModal('modalTitolari');
+            document.getElementById('azioni').style.display = 'grid';
+            document.getElementById('btnStato').innerText = "FINE Q" + nQ;
+            document.getElementById('btnStato').style.background = "#dc3545";
+            updateUI(); cloudSave();
+        }
+
+        function selezionaGiocatore(n) { if (inC.includes(n.toString())) { selP = (selP === n) ? null : n; updateUI(); } }
+
+        function registraFalloFatto() { 
+            if(!selP) return; 
+            pF[selP]++; if(teamUs === 'H') fH++; else fA++; 
+            salva("Fallo Fatto", selP, pF[selP]+"°"); 
+            updateUI(); if(pF[selP] >= 5) apriModalCambio(selP); 
+            cloudSave();
+        }
+
+        function updateUI() {
+            document.getElementById('scoreHome').innerText = sH;
+            document.getElementById('scoreAway').innerText = sA;
+            document.getElementById('fHome').innerText = fH;
+            document.getElementById('fAway').innerText = fA;
+            document.getElementById('bHome').style.display = fH >= 5 ? 'block' : 'none';
+            document.getElementById('bAway').style.display = fA >= 5 ? 'block' : 'none';
+            roster.forEach(n => {
+                const btn = document.getElementById('p'+n);
+                document.getElementById('pts'+n).innerText = pP[n];
+                document.getElementById('foul'+n).innerText = pF[n];
+                btn.className = "btn-giocatore " + (inC.includes(n.toString()) ? "in-campo " : "") + (selP == n ? "selected" : "");
+                if(pF[n] >= 5) btn.classList.add('foul-out');
+            });
+            renderDots('dotsHome', toH); renderDots('dotsAway', toA);
+        }
+
+        function apriModalCambio(autoOut=null) {
+            const og = document.getElementById('outG'); og.innerHTML = "";
+            const ig = document.getElementById('inG'); ig.innerHTML = "";
+            document.getElementById('minutoCambio').value = "";
+            roster.forEach(n => {
+                if(pF[n] >= 5 && !inC.includes(n.toString())) return;
+                const b = document.createElement('button'); b.className = 'btn-sub'; b.innerText = n;
+                if(inC.includes(n.toString())) { 
+                    if(n.toString() == autoOut) b.classList.add('active-out'); 
+                    b.onclick = function() { if(pF[n] < 5) { this.classList.toggle('active-out'); checkC(); } }; 
+                    og.appendChild(b); 
+                } else { b.onclick = function() { this.classList.toggle('active-in'); checkC(); }; ig.appendChild(b); }
+            });
+            checkC(); apriModal('modalCambio');
+        }
+
+        function checkC() {
+            const val = document.getElementById('minutoCambio').value;
+            const formatOk = val.length === 3 && parseInt(val.slice(-2)) < 60;
+            const outC = document.querySelectorAll('#outG .active-out').length;
+            const inCCount = document.querySelectorAll('#inG .active-in').length;
+            const btn = document.getElementById('confCambio');
+            btn.disabled = !(outC === inCCount && outC > 0 && formatOk);
+            btn.style.background = btn.disabled ? "grey" : "green";
+        }
+
+        function eseguiCambio() {
+            const min = document.getElementById('minutoCambio').value;
+            const o = Array.from(document.querySelectorAll('#outG .active-out')).map(b=>b.innerText);
+            const i = Array.from(document.querySelectorAll('#inG .active-in')).map(b=>b.innerText);
+            o.forEach(p => { inC = inC.filter(x => x != p); salva("Cambio OUT", p, "Min:"+min); });
+            i.forEach(p => { inC.push(p); salva("Cambio IN", p, "Min:"+min); });
+            selP = null; chiudiModal('modalCambio'); updateUI(); cloudSave();
+        }
+
+        function segnaPunto(e){let r=document.getElementById('mappaCampo').getBoundingClientRect();lX=Math.round(e.clientX-r.left);lY=Math.round(e.clientY-r.top);let d=Math.sqrt(Math.pow(lX-155,2)+Math.pow(lY-30,2));currentVal=(d>130||(lY<30&&(lX<20||lX>290)))?3:2;document.querySelectorAll('.punto-tiro').forEach(p=>p.remove());const p=document.createElement('div');p.className='punto-tiro';p.style.left=lX+"px";p.style.top=lY+"px";p.style.backgroundColor=currentVal===3?"#ffeb3b":"#ff4444";p.innerHTML=`<div class="label-tiro">${currentVal}PT</div>`;document.getElementById('mappaCampo').appendChild(p);}
+        function regTiro(esito){if(!selP||!lX)return;if(esito==='SEGNATO'){pP[selP]+=currentVal;if(teamUs==='H')sH+=currentVal;else sA+=currentVal;}salva("Tiro "+currentVal,selP,esito);chiudiModal('modalCampo');updateUI();cloudSave();}
+        function regLib(e){if(!selP)return;if(e==='SEGNATO'){pP[selP]++;if(teamUs==='H')sH++;else sA++;document.getElementById('liberi-sequenza').innerHTML+="✅ ";}else{document.getElementById('liberi-sequenza').innerHTML+="❌ ";}salva("Libero",selP,e);updateUI();cloudSave();}
+        function apriModalLibero(){document.getElementById('liberi-sequenza').innerHTML="";apriModal('modalLibero');}
+        function concludiFalloSubito(lib){if(!selP)return;if(teamUs==='H')fA++;else fH++;salva("Fallo Subito",selP,"Subito");chiudiModal('modalFalloSubito');updateUI();if(lib)apriModalLibero();cloudSave();}
+        function logQuick(a,color){if(!selP)return;salva(a,selP,"-");cloudSave();}
+        function renderDots(id,used){const cont=document.getElementById(id);cont.innerHTML="";let limit=(nQ<=2)?2:(nQ<=4?3:1);for(let i=0;i<limit;i++){const d=document.createElement('div');d.className="dot"+(i<used?" filled":"");cont.appendChild(d);}}
+        function addTO(team){let limit=(nQ<=2)?2:(nQ<=4?3:1);if(team==='Home'){if(toH<limit)toH++;}else{if(toA<limit)toA++;}updateUI();cloudSave();}
+        function addOppPoint(v){if(teamUs==='H')sA+=v;else sH+=v;salva("Punti Avv","Osp","+"+v);updateUI();cloudSave();}
+        function salva(a,g,e){stats.push({Q:nQ, G:g, Azione:a, Esito:e});}
+        function apriModal(id){document.getElementById(id).style.display='flex';}
+        function chiudiModal(id){document.getElementById(id).style.display='none';}
+        function esportaExcel(){const ws=XLSX.utils.json_to_sheet(stats);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Scout");XLSX.writeFile(wb,"Scout.xlsx");}
+        function annullaUltimaAzione(){if(stats.length>0){stats.pop();updateUI();cloudSave();}}
+    </script>
+</body>
+</html>
