@@ -3,13 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Basket Scout Pro - Cloud Sync</title>
+    <title>Basket Scout Pro - Flash & Layout</title>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     
     <style>
-        body { font-family: sans-serif; margin: 0; padding: 10px; background: #121212; color: white; touch-action: manipulation; }
+        body { font-family: sans-serif; margin: 0; padding: 10px; background: #121212; color: white; touch-action: manipulation; transition: background 0.1s; }
+        .flash-green { background: #1e3d24 !important; }
+        .flash-red { background: #4d0000 !important; }
+        .flash-blue { background: #002b36 !important; }
+
         .scoreboard { display: grid; grid-template-columns: 1fr 0.8fr 1fr; background: #000; padding: 10px; border-radius: 12px; border: 2px solid #333; margin-bottom: 10px; text-align: center; align-items: center; }
         .score-box h1 { margin: 0; font-size: 42px; color: #ffeb3b; }
         .bonus-on { color: #ff4444; font-weight: bold; font-size: 12px; margin-top: 2px; }
@@ -18,7 +22,6 @@
         .dot.filled { background: #ff9800; box-shadow: 0 0 5px #ff9800; }
         .team-name { font-size: 14px; font-weight: bold; text-transform: uppercase; color: #aaa; }
         #labelQuarto { font-weight: bold; color: #ff9800; font-size: 20px; }
-        .cloud-info { font-size: 10px; color: #7fff7f; margin-bottom: 5px; }
 
         .opp-points-bar { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; align-items: center; }
         .opp-label { font-size: 11px; color: #ff7f7f; font-weight: bold; text-align: center; }
@@ -41,18 +44,20 @@
         #mappaCampo { width: 310px; height: 240px; background: #d2a679; border: 2px solid white; position: relative; margin: 0 auto; overflow: hidden; }
         .arco-tre { position: absolute; top: -110px; left: 20px; right: 20px; height: 270px; border: 2px solid white; border-radius: 0 0 160px 160px; }
         .pitturato { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 100px; height: 120px; border: 2px solid white; }
-        .canestro { position: absolute; top: 22px; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; border: 2px solid #ff9800; border-radius: 50%; }
         .punto-tiro { position: absolute; width: 18px; height: 18px; border: 2px solid white; border-radius: 50%; transform: translate(-50%, -50%); z-index: 100; }
         
         .bg-yell { background: #ffeb3b; } .bg-grey { background: #e0e0e0; } .bg-red { background: #ff7f7f; }
         .bg-green { background: #7fff7f; } .bg-blue-l { background: #add8e6; } .bg-org { background: #ffa07a; }
         .bg-lime { background: #98fb98; } .bg-white { background: white; border: 2px solid #ff9800; }
+        
         .sub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 10px 0; }
-        .btn-sub { padding: 10px 0; background: #444; color: white; border: 2px solid #666; border-radius: 5px; font-weight: bold; }
+        .btn-sub { padding: 10px 0; background: #333; color: white; border: 2px solid #555; border-radius: 5px; font-weight: bold; }
         .active-in { background: #28a745 !important; border-color: white !important; }
         .active-out { background: #dc3545 !important; border-color: white !important; }
-
-        .btn-choice { padding: 15px; border-radius: 10px; border: none; font-weight: bold; width: 100%; margin-bottom: 10px; font-size: 16px; cursor: pointer; }
+        .separatore { border-top: 2px dashed #555; margin: 15px 0; position: relative; }
+        .separatore::after { content: "PANCHINA"; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #1a1a1a; padding: 0 10px; font-size: 10px; color: #888; }
+        
+        .btn-choice { padding: 15px; border-radius: 10px; border: none; font-weight: bold; width: 100%; margin-bottom: 10px; font-size: 16px; }
     </style>
 </head>
 <body onload="apriModal('modalCloud')">
@@ -61,20 +66,18 @@
         <div class="score-box">
             <h1 id="scoreHome">0</h1>
             <div class="team-name" id="nameH">CASA</div>
-            <div style="font-size:12px;">FALLI: <span id="fHome">0</span></div>
             <div id="bHome" class="bonus-on" style="display:none">BONUS</div>
             <div id="dotsHome" class="to-container"></div>
             <button onclick="addTO('Home')" style="font-size:10px; margin-top:5px;">TIMEOUT</button>
         </div>
         <div>
             <div id="labelQuarto">Q1</div>
-            <div id="syncStatus" class="cloud-info">DISCONNESSO</div>
+            <div id="syncStatus" style="font-size:10px; color:#7fff7f;">DISCONNESSO</div>
             <button id="btnStato" onclick="toggleQuarto()" style="background:#28a745; color:white; border:none; padding:10px; border-radius:5px; margin-top:5px; font-weight:bold;">INIZIA</button>
         </div>
         <div class="score-box">
             <h1 id="scoreAway">0</h1>
             <div class="team-name" id="nameA">TRASFERTA</div>
-            <div style="font-size:12px;">FALLI: <span id="fAway">0</span></div>
             <div id="bAway" class="bonus-on" style="display:none">BONUS</div>
             <div id="dotsAway" class="to-container"></div>
             <button onclick="addTO('Away')" style="font-size:10px; margin-top:5px;">TIMEOUT</button>
@@ -106,50 +109,48 @@
         <button class="btn-azione full-width bg-grey" onclick="if(selP) apriModalLibero()">🗑️ TIRI LIBERI</button>
         <button class="btn-azione bg-red" onclick="registraFalloFatto()">🛑 FALLO FATTO</button>
         <button class="btn-azione bg-green" onclick="if(selP) apriModal('modalFalloSubito')">🤝 FALLO SUBITO</button>
-        <button class="btn-azione bg-blue-l" onclick="logQuick('Rimbalzo Dif')">⬇️ R. DIF</button>
-        <button class="btn-azione bg-blue-l" onclick="logQuick('Rimbalzo Off')">⬆️ R. OFF</button>
-        <button class="btn-azione bg-org" onclick="logQuick('Palla Persa')">⚠️ PERSA</button>
-        <button class="btn-azione bg-lime" onclick="logQuick('Palla Recuperata')">🛡️ RECUPERO</button>
+        <button class="btn-azione bg-blue-l" onclick="logQuick('Rimbalzo Dif', 'blue')">⬇️ R. DIF</button>
+        <button class="btn-azione bg-blue-l" onclick="logQuick('Rimbalzo Off', 'blue')">⬆️ R. OFF</button>
+        <button class="btn-azione bg-org" onclick="logQuick('Palla Persa', 'red')">⚠️ PERSA</button>
+        <button class="btn-azione bg-lime" onclick="logQuick('Palla Recuperata', 'green')">🛡️ RECUPERO</button>
         <button class="btn-azione full-width bg-white" onclick="apriModalCambio()">🔄 CAMBIO</button>
         <button class="btn-azione full-width" style="background:#4caf50; color:white" onclick="esportaExcel()">📥 SCARICA EXCEL</button>
-        <button class="btn-azione full-width" style="background:#333; color:#aaa" onclick="annullaUltimaAzione()">↩️ ANNULLA</button>
     </div>
 
     <div id="modalCloud" class="modal"><div class="container-modal"><h3>ACCESSO CLOUD 🌐</h3><input type="text" id="gameId" style="width:90%; padding:12px; margin:10px 0; background:#222; color:white; border:1px solid #444;" placeholder="Nome Partita"><button class="btn-azione full-width bg-green" onclick="connettiCloud()">CONNETTI</button></div></div>
     
     <div id="modalConfig" class="modal">
         <div class="container-modal">
-            <h3>SQUADRE</h3>
-            <div style="background:#333; padding:10px; border-radius:8px; margin-bottom:15px;">
-                <p style="margin-top:0">Noi giochiamo in:</p>
-                <button id="choiceHome" class="btn-choice" style="background:#444; color:white;" onclick="setNoi('Home')">CASA</button>
-                <button id="choiceAway" class="btn-choice" style="background:#444; color:white;" onclick="setNoi('Away')">TRASFERTA</button>
-            </div>
+            <h3>CONFIGURAZIONE</h3>
+            <p>Noi giochiamo in:</p>
+            <button id="choiceHome" class="btn-choice" style="background:#444; color:white;" onclick="setNoi('Home')">CASA</button>
+            <button id="choiceAway" class="btn-choice" style="background:#444; color:white;" onclick="setNoi('Away')">TRASFERTA</button>
             <input type="text" id="inputHome" placeholder="Nome Casa" style="width:90%; padding:10px; margin:5px;">
             <input type="text" id="inputAway" placeholder="Nome Trasferta" style="width:90%; padding:10px; margin:5px;">
-            <button class="btn-azione full-width bg-green" onclick="salvaConfig()">SALVA</button>
+            <button class="btn-azione full-width bg-green" onclick="salvaConfig()">SALVA E INIZIA</button>
         </div>
     </div>
 
     <div id="modalFineQuarto" class="modal">
         <div class="container-modal">
-            <h3 id="titoloFineQ">FINE QUARTO</h3>
+            <h3 id="titoloFineQ">FINE PERIODO</h3>
             <button class="btn-choice bg-green" onclick="azioneProssimoQuarto()">SUCCESSIVO</button>
             <button class="btn-choice bg-red" style="color:white" onclick="azioneTerminaPartita()">TERMINA PARTITA</button>
             <button class="btn-choice" style="background:none; color:white" onclick="chiudiModal('modalFineQuarto')">ANNULLA</button>
         </div>
     </div>
 
-    <div id="modalTitolari" class="modal"><div class="container-modal"><h3 id="titTitolari">5 TITOLARI</h3><div class="grid-giocatori" id="titolariGrid"></div><button id="confirmTitolari" disabled onclick="confermaTitolari()" style="width:100%; padding:15px;">CONFERMA (0/5)</button></div></div>
+    <div id="modalTitolari" class="modal"><div class="container-modal"><h3 id="titTitolari">SCEGLI 5 GIOCATORI</h3><div class="grid-giocatori" id="titolariGrid"></div><button id="confirmTitolari" disabled onclick="confermaTitolari()" style="width:100%; padding:15px;">CONFERMA (0/5)</button></div></div>
     
-    <div id="modalCampo" class="modal"><div class="container-modal"><h3 id="infoTiro">Tiro da ?</h3><div id="mappaCampo" onclick="segnaPunto(event)"><div class="arco-tre"></div><div class="pitturato"></div><div class="canestro"></div></div><div style="display:flex; gap:10px; margin-top:10px;"><button style="flex:1; padding:15px; background:green; color:white;" onclick="regTiro('SEGNATO')">SI</button><button style="flex:1; padding:15px; background:red; color:white;" onclick="regTiro('SBAGLIATO')">NO</button></div><button class="full-width" onclick="chiudiModal('modalCampo')" style="background:none; border:none; color:white; margin-top:10px;">ANNULLA</button></div></div>
+    <div id="modalCampo" class="modal"><div class="container-modal"><h3 id="infoTiro">Tiro da ?</h3><div id="mappaCampo" onclick="segnaPunto(event)"><div class="arco-tre"></div><div class="pitturato"></div></div><div style="display:flex; gap:10px; margin-top:10px;"><button style="flex:1; padding:15px; background:green; color:white;" onclick="regTiro('SEGNATO')">SI</button><button style="flex:1; padding:15px; background:red; color:white;" onclick="regTiro('SBAGLIATO')">NO</button></div><button class="full-width" onclick="chiudiModal('modalCampo')" style="background:none; border:none; color:white; margin-top:10px;">ANNULLA</button></div></div>
     
     <div id="modalFalloSubito" class="modal"><div class="container-modal"><h3>FALLO SUBITO</h3><button class="btn-azione full-width bg-grey" style="margin-bottom:5px;" onclick="concludiFalloSubito(false)">RIMESSA</button><button class="btn-azione full-width bg-yell" onclick="concludiFalloSubito(true)">LIBERI</button></div></div>
+    
     <div id="modalLibero" class="modal"><div class="container-modal"><h3>LIBERI</h3><div id="liberi-sequenza" style="font-size:24px; margin:10px;"></div><button class="btn-azione bg-green" style="width:45%; display:inline-block;" onclick="regLib('SEGNATO')">OK</button><button class="btn-azione bg-red" style="width:45%; display:inline-block;" onclick="regLib('X')">X</button><button class="full-width" onclick="chiudiModal('modalLibero')">FINE</button></div></div>
-    <div id="modalCambio" class="modal"><div class="container-modal"><h3>CAMBIO 🔄</h3><div id="outG" class="sub-grid"></div><div id="inG" class="sub-grid"></div><button id="confCambio" disabled onclick="eseguiCambio()" style="width:100%; padding:15px;">CONFERMA</button><button class="full-width" onclick="chiudiModal('modalCambio')" style="background:none; color:white; border:none; margin-top:10px;">ANNULLA</button></div></div>
+    
+    <div id="modalCambio" class="modal"><div class="container-modal"><h3>CAMBIO 🔄</h3><p style="font-size:12px;color:#888;">CHI ESCE</p><div id="outG" class="sub-grid"></div><div class="separatore"></div><div id="inG" class="sub-grid"></div><button id="confCambio" disabled onclick="eseguiCambio()" style="width:100%; padding:15px;">CONFERMA CAMBIO</button><button class="full-width" onclick="chiudiModal('modalCambio')" style="background:none; color:white; border:none; margin-top:10px;">ANNULLA</button></div></div>
 
     <script>
-        // --- FIREBASE CONFIG ---
         const firebaseConfig = {
             apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
             authDomain: "basket-reggello-scout.firebaseapp.com",
@@ -170,6 +171,12 @@
         let nameH = "CASA", nameA = "TRASFERTA", noiIsCasa = true;
         let pF = {}, pP = {};
         roster.forEach(n => { pF[n]=0; pP[n]=0; });
+
+        function doFlash(type) {
+            const cls = "flash-" + type;
+            document.body.classList.add(cls);
+            setTimeout(() => document.body.classList.remove(cls), 150);
+        }
 
         function connettiCloud() {
             const id = document.getElementById('gameId').value.trim();
@@ -205,43 +212,35 @@
         }
 
         function toggleQuarto() {
-            const btn = document.getElementById('btnStato');
-            if (btn.innerText.includes("INIZIA")) {
+            if (document.getElementById('btnStato').innerText.includes("INIZIA")) {
                 fH = 0; fA = 0;
                 apriModalTitolari();
             } else {
-                document.getElementById('titoloFineQ').innerText = "FINE QUARTO " + nQ;
+                document.getElementById('titoloFineQ').innerText = "FINE PERIODO " + nQ;
                 apriModal('modalFineQuarto');
             }
         }
 
         function azioneProssimoQuarto() {
-            chiudiModal('modalFineQuarto');
-            nQ++;
+            chiudiModal('modalFineQuarto'); nQ++;
             document.getElementById('azioni').style.display = 'none';
             document.getElementById('btnStato').innerText = "INIZIA Q" + nQ;
             document.getElementById('btnStato').style.background = "#28a745";
-            selP = null;
-            updateUI();
-            cloudSave();
+            inC = []; selP = null; updateUI(); cloudSave();
         }
 
         function azioneTerminaPartita() {
             chiudiModal('modalFineQuarto');
             document.getElementById('azioni').style.display = 'none';
-            const btn = document.getElementById('btnStato');
-            btn.innerText = "PARTITA FINITA";
-            btn.style.background = "#333";
-            btn.onclick = null;
+            document.getElementById('btnStato').innerText = "PARTITA FINITA";
+            document.getElementById('btnStato').style.background = "#333";
             cloudSave();
         }
 
         function apriModalTitolari() {
             const grid = document.getElementById('titolariGrid'); grid.innerHTML = "";
-            document.getElementById('titTitolari').innerText = "QUINTETTO Q" + nQ;
             roster.forEach(n => {
                 const b = document.createElement('button'); b.className = 'btn-sub'; b.innerText = n;
-                if(inC.includes(n.toString())) b.classList.add('active-in');
                 b.onclick = () => { b.classList.toggle('active-in'); checkTit(); };
                 grid.appendChild(b);
             });
@@ -264,14 +263,18 @@
             updateUI(); cloudSave();
         }
 
-        function selezionaGiocatore(n) { if (inC.includes(n.toString())) { selP = (selP === n) ? null : n; updateUI(); } }
-
         function registraFalloFatto() { 
             if(!selP) return; 
-            pF[selP]++;
+            doFlash('red'); pF[selP]++;
             if(noiIsCasa) fH++; else fA++;
             salva("Fallo Fatto", selP, pF[selP]+"°");
             updateUI(); if(pF[selP] >= 5) apriModalCambio(selP); cloudSave();
+        }
+
+        function logQuick(a, flash) { 
+            if(!selP) return; 
+            doFlash(flash); salva(a, selP, "-"); 
+            updateUI(); cloudSave(); 
         }
 
         function segnaPunto(e){
@@ -289,17 +292,15 @@
         function regTiro(esito){
             if(!selP||!lX)return;
             if(esito==='SEGNATO'){ 
-                pP[selP]+=currentVal; 
+                doFlash('green'); pP[selP]+=currentVal; 
                 if(noiIsCasa) sH+=currentVal; else sA+=currentVal;
-            }
+            } else { doFlash('red'); }
             salva("Tiro "+currentVal, selP, esito); chiudiModal('modalCampo'); updateUI(); cloudSave();
         }
 
         function updateUI() {
             document.getElementById('scoreHome').innerText = sH;
             document.getElementById('scoreAway').innerText = sA;
-            document.getElementById('fHome').innerText = fH;
-            document.getElementById('fAway').innerText = fA;
             document.getElementById('labelQuarto').innerText = "Q" + nQ;
             document.getElementById('bHome').style.display = fH >= 5 ? 'block' : 'none';
             document.getElementById('bAway').style.display = fA >= 5 ? 'block' : 'none';
@@ -326,13 +327,13 @@
             const og = document.getElementById('outG'); og.innerHTML = "";
             const ig = document.getElementById('inG'); ig.innerHTML = "";
             roster.forEach(n => {
-                if(pF[n] >= 5 && !inC.includes(n.toString())) return;
                 const b = document.createElement('button'); b.className = 'btn-sub'; b.innerText = n;
                 if(inC.includes(n.toString())) {
                     if(n.toString() == autoOut) b.classList.add('active-out');
                     b.onclick = () => { b.classList.toggle('active-out'); checkC(); };
                     og.appendChild(b);
                 } else {
+                    if(pF[n] >= 5) b.style.display = 'none';
                     b.onclick = () => { b.classList.toggle('active-in'); checkC(); };
                     ig.appendChild(b);
                 }
@@ -356,24 +357,46 @@
             selP = null; chiudiModal('modalCambio'); updateUI(); cloudSave();
         }
 
-        function addOppPoint(v) { if(noiIsCasa) sA += v; else sH += v; salva("Punti Avv", "Osp", "+"+v); updateUI(); cloudSave(); }
-        function addTO(team) { if(team==='Home') toH++; else toA++; updateUI(); cloudSave(); }
-        function logQuick(a) { if(!selP) return; salva(a, selP, "-"); updateUI(); cloudSave(); }
-        function apriModalLibero(){ document.getElementById('liberi-sequenza').innerHTML=""; apriModal('modalLibero'); }
-        function regLib(e){ 
-            if(e==='SEGNATO'){ 
-                pP[selP]++; 
-                if(noiIsCasa) sH++; else sA++; 
-            } 
-            document.getElementById('liberi-sequenza').innerHTML += (e==='SEGNATO'?'✅':'❌'); 
-            salva("Libero", selP, e); updateUI(); cloudSave(); 
+        function addOppPoint(v) { 
+            doFlash('red');
+            if(noiIsCasa) sA += v; else sH += v; 
+            salva("Punti Avv", "Osp", "+"+v); updateUI(); cloudSave(); 
         }
-        function concludiFalloSubito(lib){ if(noiIsCasa) fA++; else fH++; chiudiModal('modalFalloSubito'); updateUI(); if(lib) apriModalLibero(); cloudSave(); }
+
+        function connettiCloud() {
+            const id = document.getElementById('gameId').value.trim();
+            if(!id) return;
+            gameRef = db.ref('games/' + id);
+            gameRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    nQ = data.nQ; sH = data.sH; sA = data.sA; fH = data.fH; fA = data.fA;
+                    toH = data.toH; toA = data.toA; nameH = data.nameH; nameA = data.nameA;
+                    noiIsCasa = data.noiIsCasa !== undefined ? data.noiIsCasa : true;
+                    inC = data.inC || []; stats = data.stats || []; pF = data.pF || pF; pP = data.pP || pP;
+                    document.getElementById('nameH').innerText = nameH;
+                    document.getElementById('nameA').innerText = nameA;
+                    if(inC.length === 5) {
+                        document.getElementById('azioni').style.display = 'grid';
+                        document.getElementById('btnStato').innerText = "FINE Q" + nQ;
+                        document.getElementById('btnStato').style.background = "#dc3545";
+                    }
+                    updateUI();
+                } else { apriModal('modalConfig'); }
+                document.getElementById('syncStatus').innerText = "LIVE: " + id;
+                chiudiModal('modalCloud');
+            });
+        }
+
+        function selezionaGiocatore(n) { if (inC.includes(n.toString())) { selP = (selP === n) ? null : n; updateUI(); } }
+        function apriModalLibero(){ document.getElementById('liberi-sequenza').innerHTML=""; apriModal('modalLibero'); }
+        function regLib(e){ if(e==='SEGNATO'){ doFlash('green'); pP[selP]++; if(noiIsCasa) sH++; else sA++; } else { doFlash('red'); } document.getElementById('liberi-sequenza').innerHTML += (e==='SEGNATO'?'✅':'❌'); salva("Libero", selP, e); updateUI(); cloudSave(); }
+        function concludiFalloSubito(lib){ doFlash('green'); if(noiIsCasa) fA++; else fH++; chiudiModal('modalFalloSubito'); updateUI(); if(lib) apriModalLibero(); cloudSave(); }
         function salvaConfig(){ nameH=document.getElementById('inputHome').value||"CASA"; nameA=document.getElementById('inputAway').value||"TRASFERTA"; chiudiModal('modalConfig'); cloudSave(); }
         function salva(a,g,e){ stats.push({Q:nQ, G:g, Azione:a, Esito:e}); }
         function apriModal(id){ document.getElementById(id).style.display='flex'; }
         function chiudiModal(id){ document.getElementById(id).style.display='none'; }
-        function annullaUltimaAzione(){ if(stats.length>0){ stats.pop(); updateUI(); cloudSave(); } }
+        function addTO(team) { if(team==='Home') toH++; else toA++; updateUI(); cloudSave(); }
         function esportaExcel(){ const ws=XLSX.utils.json_to_sheet(stats); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Scout"); XLSX.writeFile(wb,"Scout.xlsx"); }
     </script>
 </body>
