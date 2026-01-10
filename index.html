@@ -34,136 +34,126 @@
         .roster-item { display: flex; align-items: center; gap: 10px; background: #222; padding: 8px; margin-bottom: 5px; border-radius: 6px; }
         .roster-item input { background: #000; color: white; border: 1px solid #444; padding: 8px; border-radius: 4px; }
         
-        select { width: 90%; padding: 12px; background: #222; color: white; border: 1px solid #444; border-radius: 8px; margin-bottom: 10px; }
-        .btn-azione { padding: 15px; font-size: 14px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; margin-top: 5px; }
+        .btn-azione { padding: 15px; font-size: 14px; font-weight: bold; border-radius: 8px; border: none; cursor: pointer; }
         .bg-green { background: #28a745; color: white; }
         .bg-red { background: #dc3545; color: white; }
         .bg-yell { background: #ffeb3b; color: black; }
-        .full-width { width: 100%; }
-        
-        .separatore { border-top: 1px solid #444; margin: 15px 0; padding-top: 10px; }
-        .sub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .full-width { width: 100%; margin-top: 10px; }
+        .warning { color: #ff4444; font-size: 12px; margin-top: 5px; display: none; }
+
+        #mappaCampo { width: 310px; height: 240px; background: #d2a679; border: 2px solid white; position: relative; margin: 0 auto; }
+        .arco-tre { position: absolute; top: -110px; left: 20px; right: 20px; height: 270px; border: 2px solid white; border-radius: 0 0 160px 160px; }
+        .sub-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin: 10px 0; }
         .btn-sub { padding: 10px 0; background: #333; color: white; border: 1px solid #555; border-radius: 5px; }
         .active-in { background: #28a745 !important; }
         .active-out { background: #dc3545 !important; }
-        #mappaCampo { width: 310px; height: 240px; background: #d2a679; border: 2px solid white; position: relative; margin: 0 auto; }
-        .arco-tre { position: absolute; top: -110px; left: 20px; right: 20px; height: 270px; border: 2px solid white; border-radius: 0 0 160px 160px; }
+        .separatore { border-top: 1px solid #444; margin: 15px 0; padding-top: 10px; }
     </style>
 </head>
-<body onload="caricaTutto()">
+<body onload="apriModal('modalCloud')">
 
-    <div id="mainUI" style="display:none">
-        <div class="scoreboard">
-            <div class="score-box"><h1 id="scoreHome">0</h1><div class="team-name" id="nameH">CASA</div><div id="dotsHome" class="to-container"></div><button onclick="addTO('Home')" style="font-size:9px;">TO</button></div>
-            <div><div id="labelQuarto" style="color:#ff9800; font-weight:bold;">Q1</div><button id="btnStato" onclick="toggleQuarto()" style="background:#28a745; color:white; border:none; padding:8px; border-radius:5px;">INIZIA</button></div>
-            <div class="score-box"><h1 id="scoreAway">0</h1><div class="team-name" id="nameA">TRASFERTA</div><div id="dotsAway" class="to-container"></div><button onclick="addTO('Away')" style="font-size:9px;">TO</button></div>
+    <div class="scoreboard">
+        <div class="score-box">
+            <h1 id="scoreHome">0</h1>
+            <div class="team-name" id="nameH">CASA</div>
+            <div id="dotsHome" class="to-container"></div>
+            <button onclick="addTO('Home')" style="font-size:9px; margin-top:5px;">TIMEOUT</button>
         </div>
-
-        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-            <button style="flex:1; background:#331a1a; color:#ff7f7f; border:1px solid #663333; border-radius:5px; padding:10px;" onclick="addOppPoint(1)">+1</button>
-            <button style="flex:1; background:#331a1a; color:#ff7f7f; border:1px solid #663333; border-radius:5px; padding:10px;" onclick="addOppPoint(2)">+2</button>
-            <button style="flex:1; background:#331a1a; color:#ff7f7f; border:1px solid #663333; border-radius:5px; padding:10px;" onclick="addOppPoint(3)">+3</button>
-            <button style="flex:1.5; background:#4d0000; color:white; border:none; border-radius:5px;" onclick="apriModal('modalFalloAvversario')">FALLO AVV</button>
+        <div>
+            <div id="labelQuarto" style="color:#ff9800; font-weight:bold;">Q1</div>
+            <div id="syncStatus" style="font-size:9px; color:#7fff7f;">DISCONNESSO</div>
+            <button id="btnStato" onclick="toggleQuarto()" style="background:#28a745; color:white; border:none; padding:8px; border-radius:5px; margin-top:5px; font-size:12px;">INIZIA</button>
         </div>
-
-        <div class="grid-giocatori" id="rosterGara"></div>
-
-        <div class="grid-giocatori" id="azioni" style="display:none; grid-template-columns: 1fr 1fr;">
-            <button class="btn-azione bg-yell" style="grid-column: span 2;" onclick="if(selP) apriModal('modalCampo')">🏀 TIRO</button>
-            <button class="btn-azione bg-red" onclick="registraFalloFatto()">🛑 FALLO FATTO</button>
-            <button class="btn-azione bg-green" onclick="if(selP) apriModal('modalFalloSubito')">🤝 FALLO SUBITO</button>
-            <button class="btn-azione" style="background:#add8e6" onclick="logQuick('R.DIF', 'blue')">⬇️ R. DIF</button>
-            <button class="btn-azione" style="background:#add8e6" onclick="logQuick('R.OFF', 'blue')">⬆️ R. OFF</button>
-            <button class="btn-azione" style="background:#ffa07a" onclick="logQuick('P.PERSA', 'red')">⚠️ PERSA</button>
-            <button class="btn-azione" style="background:#98fb98" onclick="logQuick('RECUPERO', 'green')">🛡️ RECUPERO</button>
-            <button class="btn-azione bg-white" style="grid-column: span 2;" onclick="apriModalCambio()">🔄 CAMBIO</button>
-            <button class="btn-azione bg-green" style="grid-column: span 2;" onclick="esportaExcel()">📥 EXCEL</button>
+        <div class="score-box">
+            <h1 id="scoreAway">0</h1>
+            <div class="team-name" id="nameA">TRASFERTA</div>
+            <div id="dotsAway" class="to-container"></div>
+            <button onclick="addTO('Away')" style="font-size:9px; margin-top:5px;">TIMEOUT</button>
         </div>
+    </div>
+
+    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <button style="flex:1; background:#331a1a; color:#ff7f7f; border:1px solid #663333; border-radius:5px; padding:10px;" onclick="addOppPoint(1)">+1</button>
+        <button style="flex:1; background:#331a1a; color:#ff7f7f; border:1px solid #663333; border-radius:5px; padding:10px;" onclick="addOppPoint(2)">+2</button>
+        <button style="flex:1; background:#331a1a; color:#ff7f7f; border:1px solid #663333; border-radius:5px; padding:10px;" onclick="addOppPoint(3)">+3</button>
+        <button style="flex:1; background:#4d0000; color:white; border:none; border-radius:5px;" onclick="apriModal('modalFalloAvversario')">FALLO AVV</button>
+    </div>
+
+    <div class="grid-giocatori" id="rosterGara"></div>
+
+    <div class="grid-giocatori" id="azioni" style="display:none; grid-template-columns: 1fr 1fr;">
+        <button class="btn-azione bg-yell" style="grid-column: span 2;" onclick="if(selP) apriModal('modalCampo')">🏀 TIRO</button>
+        <button class="btn-azione bg-red" onclick="registraFalloFatto()">🛑 FALLO FATTO</button>
+        <button class="btn-azione bg-green" onclick="if(selP) apriModal('modalFalloSubito')">🤝 FALLO SUBITO</button>
+        <button class="btn-azione" style="background:#add8e6" onclick="logQuick('Rimbalzo Dif', 'blue')">⬇️ R. DIF</button>
+        <button class="btn-azione" style="background:#add8e6" onclick="logQuick('Rimbalzo Off', 'blue')">⬆️ R. OFF</button>
+        <button class="btn-azione" style="background:#ffa07a" onclick="logQuick('Palla Persa', 'red')">⚠️ PERSA</button>
+        <button class="btn-azione" style="background:#98fb98" onclick="logQuick('Palla Recuperata', 'green')">🛡️ RECUPERO</button>
+        <button class="btn-azione bg-white" style="grid-column: span 2;" onclick="apriModalCambio()">🔄 CAMBIO</button>
     </div>
 
     <div id="modalCloud" class="modal">
         <div class="container-modal">
             <h2>BASKET SCOUT 🏀</h2>
-            <input type="text" id="gameId" style="width:90%; padding:15px; margin-bottom:10px;" placeholder="ID Partita (es: Gara_01)">
+            <input type="text" id="gameId" style="width:90%; padding:15px; margin-bottom:15px; border-radius:8px;" placeholder="Nome Partita">
             
-            <p>Seleziona la tua squadra:</p>
-            <select id="selectSquadra"></select>
-            
-            <button class="btn-azione bg-green full-width" onclick="connettiGara()">CONNETTI E GIOCA</button>
             <div class="separatore"></div>
-            <button class="btn-azione bg-yell full-width" onclick="apriEditorRoster()">➕ CREA / MODIFICA ROSTER</button>
+            <h3>SQUADRA</h3>
+            <select id="selectSquadra" style="width:100%; padding:12px; background:#222; color:white; border-radius:8px; margin-bottom:10px;"></select>
+            
+            <button class="btn-azione bg-green full-width" onclick="preparaConvocati()">SELEZIONA SQUADRA</button>
+            <button class="btn-azione bg-yell full-width" onclick="apriGestioneRoster()">CREA / MODIFICA ROSTER</button>
         </div>
     </div>
 
-    <div id="modalEditor" class="modal">
+    <div id="modalGestioneRoster" class="modal">
         <div class="container-modal">
-            <h3>EDITOR SQUADRE</h3>
-            <input type="text" id="editNomeSquadra" placeholder="Nome Squadra" style="width:90%; padding:10px; margin-bottom:10px;">
-            <div id="listaGiocatoriEditor" style="max-height:300px; overflow-y:auto;"></div>
-            <button class="btn-azione full-width" onclick="aggiungiRigaEditor()">+ AGGIUNGI GIOCATORE</button>
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                <button class="btn-azione bg-green" style="flex:1" onclick="salvaRoster()">SALVA</button>
-                <button class="btn-azione bg-red" style="flex:1" onclick="chiudiModal('modalEditor')">ANNULLA</button>
-            </div>
+            <h3>GESTIONE SQUADRE</h3>
+            <input type="text" id="nuovoNomeSquadra" placeholder="Nome Squadra (es: Under 17)" style="width:90%; padding:12px; margin-bottom:10px;">
+            <div id="editorGiocatori" style="max-height: 250px; overflow-y: auto;"></div>
+            <button class="btn-azione bg-yell full-width" onclick="aggiungiRigaGiocatore()">+ GIOCATORE</button>
+            <div class="separatore"></div>
+            <button class="btn-azione bg-green full-width" onclick="salvaNuovoRoster()">SALVA SQUADRA</button>
+            <button class="btn-azione bg-red full-width" id="btnEliminaSquadra" style="display:none;" onclick="eliminaSquadra()">ELIMINA SQUADRA</button>
+            <button class="btn-azione full-width" onclick="chiudiModal('modalGestioneRoster'); apriModal('modalCloud')">ANNULLA</button>
         </div>
     </div>
 
     <div id="modalConvocati" class="modal">
         <div class="container-modal">
-            <h3>CONVOCATI OGGI</h3>
+            <h3 id="titoloConvocati">CONVOCATI</h3>
             <div id="listaConvocati"></div>
-            <button class="btn-azione bg-green full-width" onclick="validaESalvaConvocati()">AVANTI</button>
+            <div id="warnConvocati" class="warning">ATTENZIONE: Numeri maglia duplicati!</div>
+            <button class="btn-azione bg-green full-width" id="btnSalvaConvocati" onclick="vaiAConfig()">AVANTI</button>
         </div>
     </div>
 
     <div id="modalConfig" class="modal">
         <div class="container-modal">
-            <h3>CONFIGURAZIONE</h3>
-            <div style="display:flex; gap:5px; margin-bottom:10px;">
-                <button id="cHome" class="btn-azione" style="flex:1" onclick="setNoi(true)">CASA</button>
-                <button id="cAway" class="btn-azione" style="flex:1" onclick="setNoi(false)">FUORI</button>
+            <h3>CONFIGURAZIONE GARA</h3>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <button id="cHome" class="btn-azione" style="flex:1; background:#444;" onclick="setNoi('Home')">CASA</button>
+                <button id="cAway" class="btn-azione" style="flex:1; background:#444;" onclick="setNoi('Away')">FUORI</button>
             </div>
-            <input type="text" id="oppName" placeholder="Nome Avversari" style="width:90%; padding:10px; margin-bottom:10px;">
-            <p>Numeri Avversari (separati da spazio):</p>
-            <input type="text" id="oppNumbers" placeholder="4 8 15 16 23 42" style="width:90%; padding:10px;">
-            <button class="btn-azione bg-green full-width" style="margin-top:15px;" onclick="avviaGara()">INIZIA SCOUTING</button>
+            <input type="text" id="oppName" placeholder="Nome Avversari" style="width:90%; padding:12px; margin-bottom:10px;">
+            <p>Numeri Avversari (es: 4 7 10)</p>
+            <input type="text" id="oppNumbers" placeholder="4 8 11 23" style="width:90%; padding:12px;">
+            <button class="btn-azione bg-green full-width" style="margin-top:20px;" onclick="avviaGara()">INIZIA SCOUTING</button>
         </div>
     </div>
 
+    <div id="modalFineQuarto" class="modal"><div class="container-modal"><h3 id="titoloFineQ">FINE</h3><button class="btn-azione bg-green full-width" onclick="azioneProssimoQuarto()">PROSSIMO Q</button><button class="btn-azione bg-red full-width" onclick="azioneTerminaPartita()">TERMINA</button><button class="btn-azione full-width" onclick="chiudiModal('modalFineQuarto')">ANNULLA</button></div></div>
     <div id="modalTitolari" class="modal"><div class="container-modal"><h3>5 TITOLARI</h3><div class="grid-giocatori" id="titolariGrid"></div><button id="confirmTitolari" disabled onclick="confermaTitolari()" class="btn-azione bg-green full-width">CONFERMA</button></div></div>
-    <div id="modalCampo" class="modal"><div class="container-modal"><h3 id="infoTiro">Tiro</h3><div id="mappaCampo" onclick="segnaPunto(event)"><div class="arco-tre"></div></div><div style="display:flex; gap:10px; margin-top:10px;"><button style="flex:1; padding:20px;" class="bg-green" onclick="regTiro('SEGNATO')">SI</button><button style="flex:1; padding:20px;" class="bg-red" onclick="regTiro('SBAGLIATO')">NO</button></div></div></div>
-    <div id="modalCambio" class="modal"><div class="container-modal"><h3>🔄 CAMBIO</h3><input type="tel" id="minutoCambio" maxlength="3" placeholder="MSS" style="font-size:24px; width:100px; text-align:center;"><p>ESCE</p><div id="outG" class="sub-grid"></div><div class="separatore"></div><p>ENTRA</p><div id="inG" class="sub-grid"></div><button id="confCambio" disabled onclick="eseguiCambio()" class="btn-azione bg-green full-width">CONFERMA</button></div></div>
-    <div id="modalFalloAvversario" class="modal"><div class="container-modal"><h3>FALLO AVVERSARIO</h3><div id="oppFoulGrid" class="sub-grid"></div><button class="btn-azione full-width" onclick="chiudiModal('modalFalloAvversario')">CHIUDI</button></div></div>
-    <div id="modalFalloSubito" class="modal"><div class="container-modal"><h3>FALLO SUBITO</h3><p>Chi ha fatto fallo?</p><div id="oppFoulPerNoi" class="sub-grid"></div><button class="btn-azione bg-yell full-width" style="margin-top:10px;" onclick="apriModal('modalLibero'); chiudiModal('modalFalloSubito')">TIRI LIBERI</button></div></div>
-    <div id="modalLibero" class="modal"><div class="container-modal"><h3>LIBERI</h3><div id="liberi-sequenza" style="font-size:24px;"></div><button class="btn-azione bg-green" onclick="regLib('OK')">OK</button><button class="btn-azione bg-red" onclick="regLib('X')">X</button><button class="full-width" onclick="chiudiModal('modalLibero')">FINE</button></div></div>
+    <div id="modalCambio" class="modal"><div class="container-modal"><h3>🔄 CAMBIO</h3><input type="tel" id="minutoCambio" maxlength="3" placeholder="MSS" style="font-size:24px; width:100px; text-align:center;"><div id="outG" class="sub-grid"></div><div class="separatore"></div><div id="inG" class="sub-grid"></div><button id="confCambio" disabled onclick="eseguiCambio()" class="btn-azione bg-green full-width">CONFERMA</button></div></div>
+    <div id="modalFalloAvversario" class="modal"><div class="container-modal"><h3>FALLO AVV</h3><div id="oppFoulGrid" class="sub-grid"></div><button class="btn-azione full-width" onclick="chiudiModal('modalFalloAvversario')">CHIUDI</button></div></div>
+    <div id="modalCampo" class="modal"><div class="container-modal"><h3>TIRO</h3><div id="mappaCampo" onclick="segnaPunto(event)"><div class="arco-tre"></div></div><div style="display:flex; gap:10px; margin-top:10px;"><button class="bg-green" style="flex:1; padding:20px" onclick="regTiro('SEGNATO')">SI</button><button class="bg-red" style="flex:1; padding:20px" onclick="regTiro('SBAGLIATO')">NO</button></div></div></div>
+    <div id="modalFalloSubito" class="modal"><div class="container-modal"><h3>FALLO SUBITO</h3><div id="oppFoulPerNoi" class="sub-grid"></div><button class="btn-azione bg-yell full-width" onclick="chiudiModal('modalFalloSubito'); apriModal('modalLibero')">LIBERI</button></div></div>
+    <div id="modalLibero" class="modal"><div class="container-modal"><h3>LIBERI</h3><div id="lib-seq"></div><button class="bg-green" onclick="regLib('SEGNATO')">OK</button><button class="bg-red" onclick="regLib('X')">X</button><button onclick="chiudiModal('modalLibero')">FINE</button></div></div>
 
     <script>
-        // DATABASE LOCALE SQUADRE
-        let databaseSquadre = JSON.parse(localStorage.getItem('dbSquadre')) || {};
-        let convocatiGara = [];
-        let avversariNums = [];
-        let falliAvv = {};
-        let noiIsCasa = true;
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
-            authDomain: "basket-reggello-scout.firebaseapp.com",
-            databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "basket-reggello-scout",
-            storageBucket: "basket-reggello-scout.firebasestorage.app",
-            messagingSenderId: "395815946220",
-            appId: "1:395815946220:web:68c00b4c7f2da1754722c9"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        let gameRef = null;
-
-        let nQ = 1, sH = 0, sA = 0, fH = 0, fA = 0, toH = 0, toA = 0, inC = [], stats = [], selP = null, pF = {}, pP = {};
-
-        function caricaTutto() {
-            aggiornaSelectSquadre();
-            apriModal('modalCloud');
-        }
+        // --- LOGICA DATABASE ROSTER ---
+        let databaseSquadre = JSON.parse(localStorage.getItem('databaseSquadre')) || {};
+        let currentSquadraEdit = null;
 
         function aggiornaSelectSquadre() {
             const sel = document.getElementById('selectSquadra');
@@ -172,75 +162,130 @@
                 sel.innerHTML += `<option value="${s}">${s}</option>`;
             });
         }
+        aggiornaSelectSquadre();
 
-        // --- EDITOR ROSTER ---
-        function apriEditorRoster() {
+        function apriGestioneRoster() {
             const nomeSel = document.getElementById('selectSquadra').value;
-            document.getElementById('editNomeSquadra').value = nomeSel || "";
-            const cont = document.getElementById('listaGiocatoriEditor');
-            cont.innerHTML = "";
-            const lista = nomeSel ? databaseSquadre[nomeSel] : [];
-            lista.forEach(p => aggiungiRigaEditor(p.n, p.nome));
-            if(lista.length === 0) aggiungiRigaEditor();
-            apriModal('modalEditor');
+            currentSquadraEdit = nomeSel || null;
+            document.getElementById('nuovoNomeSquadra').value = currentSquadraEdit || "";
+            document.getElementById('editorGiocatori').innerHTML = "";
+            document.getElementById('btnEliminaSquadra').style.display = currentSquadraEdit ? 'block' : 'none';
+            
+            if(currentSquadraEdit) {
+                databaseSquadre[currentSquadraEdit].forEach(p => aggiungiRigaGiocatore(p.n, p.nome));
+            } else {
+                for(let i=0; i<5; i++) aggiungiRigaGiocatore();
+            }
+            chiudiModal('modalCloud');
+            apriModal('modalGestioneRoster');
         }
 
-        function aggiungiRigaEditor(n="", nome="") {
+        function aggiungiRigaGiocatore(n="", nome="") {
             const div = document.createElement('div');
             div.className = "roster-item";
-            div.innerHTML = `<input type="number" class="en" value="${n}" placeholder="#" style="width:40px"> <input type="text" class="enom" value="${nome}" placeholder="Nome" style="flex:1"> <button onclick="this.parentElement.remove()" class="bg-red">X</button>`;
-            document.getElementById('listaGiocatoriEditor').appendChild(div);
+            div.innerHTML = `
+                <input type="number" class="edit-num" value="${n}" placeholder="#" style="width:45px">
+                <input type="text" class="edit-nome" value="${nome}" placeholder="Nome" style="flex:1">
+                <button class="bg-red" style="border:none; padding:5px 10px; border-radius:4px" onclick="this.parentElement.remove()">X</button>
+            `;
+            document.getElementById('editorGiocatori').appendChild(div);
         }
 
-        function salvaRoster() {
-            const nome = document.getElementById('editNomeSquadra').value.trim();
-            if(!nome) return alert("Inserisci nome squadra");
-            const righeN = document.querySelectorAll('.en');
-            const righeNome = document.querySelectorAll('.enom');
-            let nuovoRoster = [];
-            let checkSet = new Set();
-            for(let i=0; i<righeN.length; i++) {
-                let n = righeN[i].value.trim();
-                if(n) {
-                    if(checkSet.has(n)) return alert("Numero duplicato: " + n);
-                    checkSet.add(n);
-                    nuovoRoster.push({n: n, nome: righeNome[i].value.trim()});
+        function salvaNuovoRoster() {
+            const nome = document.getElementById('nuovoNomeSquadra').value.trim();
+            if(!nome) return alert("Inserisci il nome della squadra");
+
+            const righe = document.querySelectorAll('.roster-item');
+            const lista = [];
+            const numeriSet = new Set();
+            let erroreDuplicati = false;
+
+            righe.forEach(r => {
+                const num = r.querySelector('.edit-num').value;
+                const nme = r.querySelector('.edit-nome').value;
+                if(num) {
+                    if(numeriSet.has(num)) erroreDuplicati = true;
+                    numeriSet.add(num);
+                    lista.push({n: num, nome: nme});
                 }
-            }
-            databaseSquadre[nome] = nuovoRoster;
-            localStorage.setItem('dbSquadre', JSON.stringify(databaseSquadre));
+            });
+
+            if(erroreDuplicati) return alert("Errore: ci sono numeri maglia duplicati!");
+
+            databaseSquadre[nome] = lista;
+            localStorage.setItem('databaseSquadre', JSON.stringify(databaseSquadre));
             aggiornaSelectSquadre();
-            chiudiModal('modalEditor');
+            chiudiModal('modalGestioneRoster');
+            apriModal('modalCloud');
         }
 
-        // --- GESTIONE AVVIO GARA ---
-        function connettiGara() {
-            const gameId = document.getElementById('gameId').value.trim();
-            const squadra = document.getElementById('selectSquadra').value;
-            if(!gameId || !squadra) return alert("Inserisci ID e seleziona Squadra");
-            gameRef = db.ref('games/' + gameId);
+        function eliminaSquadra() {
+            if(confirm("Eliminare definitivamente questa squadra?")) {
+                delete databaseSquadre[currentSquadraEdit];
+                localStorage.setItem('databaseSquadre', JSON.stringify(databaseSquadre));
+                aggiornaSelectSquadre();
+                chiudiModal('modalGestioneRoster');
+                apriModal('modalCloud');
+            }
+        }
+
+        // --- GESTIONE PARTITA ---
+        let convocati = [], avversariNums = [], falliAvv = {};
+        let nQ = 1, sH = 0, sA = 0, fH = 0, fA = 0, toH = 0, toA = 0;
+        let inC = [], stats = [], selP = null, noiIsCasa = true, pF = {}, pP = {}, gameRef = null;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
+            authDomain: "basket-reggello-scout.firebaseapp.com",
+            databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app", 
+            projectId: "basket-reggello-scout",
+            storageBucket: "basket-reggello-scout.firebasestorage.app",
+            messagingSenderId: "395815946220",
+            appId: "1:395815946220:web:68c00b4c7f2da1754722c9",
+            measurementId: "G-8DFL77TB65"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function preparaConvocati() {
+            const sq = document.getElementById('selectSquadra').value;
+            if(!sq) return alert("Seleziona una squadra!");
             
             const cont = document.getElementById('listaConvocati');
             cont.innerHTML = "";
-            databaseSquadre[squadra].forEach((p, i) => {
-                cont.innerHTML += `<div class="roster-item"><input type="checkbox" class="c-check" checked data-idx="${i}"> <input type="number" class="c-num" value="${p.n}" style="width:40px"> <span>${p.nome}</span></div>`;
+            databaseSquadre[sq].forEach((p, i) => {
+                cont.innerHTML += `
+                    <div class="roster-item">
+                        <input type="checkbox" checked class="conv-check" style="width:20px;height:20px">
+                        <input type="number" value="${p.n}" class="conv-num" style="width:45px" oninput="validaConvocati()">
+                        <span style="flex:1;text-align:left">${p.nome}</span>
+                    </div>`;
             });
+            chiudiModal('modalCloud');
             apriModal('modalConvocati');
+            validaConvocati();
         }
 
-        function validaESalvaConvocati() {
-            convocatiGara = [];
-            let checkSet = new Set();
-            const checks = document.querySelectorAll('.c-check');
-            const nums = document.querySelectorAll('.c-num');
-            const squadra = document.getElementById('selectSquadra').value;
+        function validaConvocati() {
+            const inputs = document.querySelectorAll('.conv-num');
+            const nums = [];
+            let dupe = false;
+            inputs.forEach(i => {
+                if(nums.includes(i.value)) dupe = true;
+                nums.push(i.value);
+            });
+            document.getElementById('warnConvocati').style.display = dupe ? 'block' : 'none';
+            document.getElementById('btnSalvaConvocati').disabled = dupe;
+        }
 
-            checks.forEach((c, i) => {
-                if(c.checked) {
-                    let n = nums[i].value;
-                    if(checkSet.has(n)) return alert("Numero duplicato nei convocati: " + n);
-                    checkSet.add(n);
-                    convocatiGara.push({n: n, nome: databaseSquadre[squadra][i].nome});
+        function vaiAConfig() {
+            convocati = [];
+            const items = document.querySelectorAll('#listaConvocati .roster-item');
+            items.forEach(item => {
+                if(item.querySelector('.conv-check').checked) {
+                    const n = item.querySelector('.conv-num').value;
+                    const nm = item.querySelector('span').innerText;
+                    convocati.push({n, nome: nm});
                     pF[n] = 0; pP[n] = 0;
                 }
             });
@@ -248,100 +293,66 @@
             apriModal('modalConfig');
         }
 
-        function setNoi(casa) {
-            noiIsCasa = casa;
-            document.getElementById('cHome').className = "btn-azione " + (casa ? "bg-green" : "");
-            document.getElementById('cAway').className = "btn-azione " + (!casa ? "bg-green" : "");
-        }
-
         function avviaGara() {
-            const oppName = document.getElementById('oppName').value || "AVVERSARI";
-            const numsStr = document.getElementById('oppNumbers').value;
-            avversariNums = numsStr.split(/[\s,]+/).filter(n => n !== "");
-            
-            document.getElementById('nameH').innerText = noiIsCasa ? document.getElementById('selectSquadra').value : oppName;
-            document.getElementById('nameA').innerText = noiIsCasa ? oppName : document.getElementById('selectSquadra').value;
-            
+            const id = document.getElementById('gameId').value.trim();
+            if(!id) return alert("Inserisci nome partita!");
+            gameRef = db.ref('games/' + id);
+
+            const oName = document.getElementById('oppName').value || "AVVERSARI";
+            avversariNums = document.getElementById('oppNumbers').value.split(/[\s,]+/).filter(n => n !== "");
             avversariNums.forEach(n => falliAvv[n] = 0);
-            const grid = document.getElementById('rosterGara');
-            grid.innerHTML = "";
-            convocatiGara.forEach(p => {
-                grid.innerHTML += `<button class="btn-giocatore" id="p${p.n}" onclick="selezionaGiocatore('${p.n}')"><span class="pts-badge" id="pts${p.n}">0</span>${p.n}<span class="foul-badge" id="foul${p.n}">0</span></button>`;
+
+            const myTeamName = document.getElementById('selectSquadra').value;
+            if(noiIsCasa) {
+                document.getElementById('nameH').innerText = myTeamName;
+                document.getElementById('nameA').innerText = oName;
+            } else {
+                document.getElementById('nameH').innerText = oName;
+                document.getElementById('nameA').innerText = myTeamName;
+            }
+
+            const gridgara = document.getElementById('rosterGara');
+            gridgara.innerHTML = "";
+            convocati.forEach(p => {
+                gridgara.innerHTML += `<button class="btn-giocatore" id="p${p.n}" onclick="selezionaGiocatore('${p.n}')">
+                    <span class="pts-badge" id="pts${p.n}">0</span>${p.n}<span class="foul-badge" id="foul${p.n}">0</span></button>`;
             });
 
             chiudiModal('modalConfig');
-            chiudiModal('modalCloud');
-            document.getElementById('mainUI').style.display = 'block';
-            updateUI();
-            cloudSave();
+            document.getElementById('syncStatus').innerText = "LIVE: " + id;
+            updateUI(); cloudSave();
         }
 
-        // --- LOGICA GIOCO (INVARIATA MA ADATTATA) ---
-        function doFlash(t){ document.body.className="flash-"+t; setTimeout(()=>document.body.className="", 150); }
-        function toggleQuarto() { if (document.getElementById('btnStato').innerText.includes("INIZIA")) { fH=0; fA=0; apriModalTitolari(); } else { apriModal('modalFineQuarto'); } }
-        function azioneProssimoQuarto() { chiudiModal('modalFineQuarto'); if(nQ==2||nQ>=4){ toH=0; toA=0; } nQ++; inC=[]; selP=null; updateUI(); cloudSave(); }
-        function apriModalTitolari() { const g=document.getElementById('titolariGrid'); g.innerHTML=""; convocatiGara.forEach(p=>{ const b=document.createElement('button'); b.className='btn-sub'; b.innerText=p.n; b.onclick=()=>{ b.classList.toggle('active-in'); checkTit(); }; g.appendChild(b); }); checkTit(); apriModal('modalTitolari'); }
-        function checkTit() { const c=document.querySelectorAll('#titolariGrid .active-in').length; document.getElementById('confirmTitolari').disabled=(c!==5); }
-        function confermaTitolari() { inC=Array.from(document.querySelectorAll('#titolariGrid .active-in')).map(b=>b.innerText); chiudiModal('modalTitolari'); document.getElementById('azioni').style.display='grid'; updateUI(); cloudSave(); }
-        function registraFalloFatto() { if(!selP)return; doFlash('red'); pF[selP]++; if(noiIsCasa)fH++; else fA++; salva("Fallo", selP, pF[selP]+"°"); updateUI(); if(pF[selP]>=5) apriModalCambio(selP); cloudSave(); }
-        function registraFalloAvversario(n) { falliAvv[n]++; if(noiIsCasa)fA++; else fH++; salva("Fallo Avv", n, falliAvv[n]+"°"); updateUI(); chiudiModal('modalFalloAvversario'); chiudiModal('modalFalloSubito'); cloudSave(); }
-        
-        function checkC() {
-            const o = document.querySelectorAll('#outG .active-out').length;
-            const i = document.querySelectorAll('#inG .active-in').length;
-            const t = document.getElementById('minutoCambio').value;
-            const timeOk = (t.length===3 && parseInt(t.substring(1))<=59);
-            document.getElementById('confCambio').disabled = (o!==i || o===0 || !timeOk);
-        }
-        function apriModalCambio(autoOut=null) {
-            const og=document.getElementById('outG'); const ig=document.getElementById('inG'); og.innerHTML=""; ig.innerHTML="";
-            convocatiGara.forEach(p=>{
-                const b=document.createElement('button'); b.className='btn-sub'; b.innerText=p.n;
-                if(inC.includes(p.n)){ if(p.n==autoOut)b.classList.add('active-out'); b.onclick=()=>{b.classList.toggle('active-out');checkC();}; og.appendChild(b); }
-                else { if(pF[p.n]<5){ b.onclick=()=>{b.classList.toggle('active-in');checkC();}; ig.appendChild(b); } }
-            });
-            apriModal('modalCambio');
-        }
-        function eseguiCambio() {
-            const t=document.getElementById('minutoCambio').value; const time=t[0]+":"+t.substring(1);
-            const o=Array.from(document.querySelectorAll('.active-out')).map(b=>b.innerText);
-            const i=Array.from(document.querySelectorAll('.active-in')).map(b=>b.innerText);
-            o.forEach(p=>{ inC=inC.filter(x=>x!=p); salva("Esc", p, time); });
-            i.forEach(p=>{ inC.push(p); salva("Ent", p, time); });
-            selP=null; chiudiModal('modalCambio'); updateUI(); cloudSave();
-        }
-
-        function updateUI() {
+        // --- SISTEMA DI GIOCO ---
+        function setNoi(p) { noiIsCasa=(p==='Home'); document.getElementById('cHome').style.background=noiIsCasa?'#28a745':'#444'; document.getElementById('cAway').style.background=!noiIsCasa?'#28a745':'#444'; }
+        function doFlash(t){ document.body.classList.add('flash-'+t); setTimeout(()=>document.body.classList.remove('flash-'+t),150); }
+        function toggleQuarto(){ if(document.getElementById('btnStato').innerText.includes("INIZIA")){ fH=0; fA=0; apriModalTitolari(); } else { apriModal('modalFineQuarto'); } }
+        function azioneProssimoQuarto(){ chiudiModal('modalFineQuarto'); if(nQ===2 || nQ>=4){ toH=0; toA=0; } nQ++; document.getElementById('azioni').style.display='none'; document.getElementById('btnStato').innerText="INIZIA Q"+nQ; updateUI(); cloudSave(); }
+        function apriModalTitolari(){ const g=document.getElementById('titolariGrid'); g.innerHTML=""; convocati.forEach(p=>{ g.innerHTML+=`<button class="btn-sub" onclick="this.classList.toggle('active-in');checkTit()">${p.n}</button>`; }); apriModal('modalTitolari'); }
+        function checkTit(){ const c=document.querySelectorAll('#titolariGrid .active-in').length; document.getElementById('confirmTitolari').disabled=(c!==5); }
+        function confermaTitolari(){ inC=Array.from(document.querySelectorAll('.active-in')).map(b=>b.innerText); chiudiModal('modalTitolari'); document.getElementById('azioni').style.display='grid'; document.getElementById('btnStato').innerText="FINE Q"+nQ; updateUI(); cloudSave(); }
+        function selezionaGiocatore(n){ if(inC.includes(n)){ selP=(selP===n)?null:n; updateUI(); } }
+        function registraFalloFatto(){ if(!selP) return; doFlash('red'); pF[selP]++; if(noiIsCasa) fH++; else fA++; salva("Fallo", selP, pF[selP]+"°"); updateUI(); if(pF[selP]>=5) apriModalCambio(selP); cloudSave(); }
+        function registraFalloAvversario(n){ falliAvv[n]++; if(noiIsCasa) fA++; else fH++; salva("Fallo Avv", n, falliAvv[n]+"°"); chiudiModal('modalFalloAvversario'); chiudiModal('modalFalloSubito'); updateUI(); cloudSave(); }
+        function addOppPoint(v){ doFlash('red'); if(noiIsCasa) sA+=v; else sH+=v; salva("Punti Avv", "Osp", "+"+v); updateUI(); cloudSave(); }
+        function logQuick(a,f){ if(selP){ doFlash(f); salva(a, selP, "-"); updateUI(); cloudSave(); } }
+        function cloudSave(){ if(gameRef) gameRef.set({nQ, sH, sA, fH, fA, toH, toA, inC, stats, pF, pP, falliAvv}); }
+        function updateUI(){
             document.getElementById('scoreHome').innerText=sH; document.getElementById('scoreAway').innerText=sA;
             document.getElementById('labelQuarto').innerText=nQ>4?"OT":"Q"+nQ;
-            convocatiGara.forEach(p=>{
-                const b=document.getElementById('p'+p.n); if(b){
-                    document.getElementById('pts'+p.n).innerText=pP[p.n]; document.getElementById('foul'+p.n).innerText=pF[p.n];
-                    b.className="btn-giocatore "+(inC.includes(p.n)?"in-campo ":"")+(selP==p.n?"selected":"");
-                }
-            });
-            document.getElementById('btnStato').innerText=inC.length===5?"FINE Q"+nQ:"INIZIA";
-            const fG=document.getElementById('oppFoulGrid'); const fN=document.getElementById('oppFoulPerNoi'); fG.innerHTML=""; fN.innerHTML="";
-            avversariNums.forEach(n=>{
-                const b=`<button class="btn-sub" onclick="registraFalloAvversario('${n}')">${n} (${falliAvv[n]})</button>`;
-                fG.innerHTML+=b; fN.innerHTML+=`<button class="btn-sub" onclick="registraFalloAvversario('${n}')">${n}</button>`;
-            });
+            convocati.forEach(p=>{ const b=document.getElementById('p'+p.n); if(b){ document.getElementById('pts'+p.n).innerText=pP[p.n]; document.getElementById('foul'+p.n).innerText=pF[p.n]; b.className="btn-giocatore "+(inC.includes(p.n)?"in-campo ":"")+(selP==p.n?"selected":""); }});
             renderDots('dotsHome', toH); renderDots('dotsAway', toA);
+            const fg=document.getElementById('oppFoulGrid'); const fn=document.getElementById('oppFoulPerNoi');
+            fg.innerHTML=""; fn.innerHTML=""; avversariNums.forEach(n=>{
+                fg.innerHTML+=`<button class="btn-sub" onclick="registraFalloAvversario('${n}')">${n} (${falliAvv[n]})</button>`;
+                fn.innerHTML+=`<button class="btn-sub" onclick="registraFalloAvversario('${n}')">${n}</button>`;
+            });
         }
-
-        function renderDots(id, used) { const c=document.getElementById(id); c.innerHTML=""; let l=(nQ<=2)?2:(nQ<=4?3:1); for(let i=0; i<l; i++) c.innerHTML+=`<div class="dot ${i<used?'filled':''}"></div>`; }
-        function cloudSave(){ if(gameRef) gameRef.set({nQ, sH, sA, fH, fA, toH, toA, inC, stats, pF, pP, falliAvv}); }
-        function salva(a,g,e){ stats.push({Q:nQ, G:g, Az:a, Es:e}); }
+        function renderDots(id,u){ const c=document.getElementById(id); c.innerHTML=""; let l=(nQ<=2)?2:(nQ<=4?3:1); for(let i=0; i<l; i++) c.innerHTML+=`<div class="dot ${i<u?'filled':''}"></div>`; }
         function apriModal(id){ document.getElementById(id).style.display='flex'; }
         function chiudiModal(id){ document.getElementById(id).style.display='none'; }
-        function selezionaGiocatore(n){ if(inC.includes(n)){ selP=(selP===n)?null:n; updateUI(); } }
-        function logQuick(a,f){ if(selP){ doFlash(f); salva(a, selP, "-"); updateUI(); cloudSave(); } }
-        function addOppPoint(v){ doFlash('red'); if(noiIsCasa)sA+=v; else sH+=v; updateUI(); cloudSave(); }
-        function segnaPunto(e){ let r=document.getElementById('mappaCampo').getBoundingClientRect(); let x=e.clientX-r.left; let y=e.clientY-r.top; let d=Math.sqrt(Math.pow(x-155,2)+Math.pow(y-30,2)); currentVal=(d>130||(y<30&&(x<20||x>290)))?3:2; document.getElementById('infoTiro').innerText="Tiro da "+currentVal; }
-        function regTiro(e){ if(!selP)return; if(e==='SEGNATO'){ doFlash('green'); pP[selP]+=currentVal; if(noiIsCasa)sH+=currentVal; else sA+=currentVal; } salva("Tiro"+currentVal, selP, e); chiudiModal('modalCampo'); updateUI(); cloudSave(); }
-        function addTO(t){ if(t==='Home')toH++; else toA++; updateUI(); cloudSave(); }
-        function regLib(e){ if(e==='OK'){ doFlash('green'); pP[selP]++; if(noiIsCasa)sH++; else sA++; } salva("Libero", selP, e); updateUI(); cloudSave(); }
-        function esportaExcel(){ const ws=XLSX.utils.json_to_sheet(stats); const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,"Scout"); XLSX.writeFile(wb,"Scout.xlsx"); }
+        function salva(a,g,e){ stats.push({Q:nQ, G:g, Azione:a, Esito:e}); }
+        function addTO(t){ if(t==='Home') toH++; else toA++; updateUI(); cloudSave(); }
     </script>
 </body>
 </html>
