@@ -12,7 +12,7 @@
         body { font-family: sans-serif; margin: 0; padding: 10px; background: #121212; color: white; touch-action: manipulation; }
         .scoreboard { display: grid; grid-template-columns: 1fr 0.8fr 1fr; background: #000; padding: 10px; border-radius: 12px; border: 2px solid #333; margin-bottom: 10px; text-align: center; align-items: center; }
         .score-box h1 { margin: 0; font-size: 42px; color: #ffeb3b; }
-        .bonus-on { color: #ff4444; font-weight: bold; font-size: 14px; margin-top: 2px; }
+        .bonus-on { color: #ff4444; font-weight: bold; font-size: 12px; margin-top: 2px; }
         .to-container { display: flex; justify-content: center; gap: 5px; margin-top: 5px; }
         .dot { width: 12px; height: 12px; border: 1px solid #555; border-radius: 50%; background: #333; }
         .dot.filled { background: #ff9800; box-shadow: 0 0 5px #ff9800; }
@@ -51,6 +51,8 @@
         .btn-sub { padding: 10px 0; background: #444; color: white; border: 2px solid #666; border-radius: 5px; font-weight: bold; }
         .active-in { background: #28a745 !important; border-color: white !important; }
         .active-out { background: #dc3545 !important; border-color: white !important; }
+
+        .btn-choice { padding: 15px; border-radius: 10px; border: none; font-weight: bold; width: 100%; margin-bottom: 10px; font-size: 16px; cursor: pointer; }
     </style>
 </head>
 <body onload="apriModal('modalCloud')">
@@ -114,9 +116,34 @@
     </div>
 
     <div id="modalCloud" class="modal"><div class="container-modal"><h3>ACCESSO CLOUD 🌐</h3><input type="text" id="gameId" style="width:90%; padding:12px; margin:10px 0; background:#222; color:white; border:1px solid #444;" placeholder="Nome Partita"><button class="btn-azione full-width bg-green" onclick="connettiCloud()">CONNETTI</button></div></div>
-    <div id="modalConfig" class="modal"><div class="container-modal"><h3>SQUADRE</h3><input type="text" id="inputHome" placeholder="CASA" style="width:90%; padding:10px; margin:5px;"><input type="text" id="inputAway" placeholder="TRASFERTA" style="width:90%; padding:10px; margin:5px;"><button class="btn-azione full-width bg-green" onclick="salvaConfig()">SALVA</button></div></div>
+    
+    <div id="modalConfig" class="modal">
+        <div class="container-modal">
+            <h3>SQUADRE</h3>
+            <div style="background:#333; padding:10px; border-radius:8px; margin-bottom:15px;">
+                <p style="margin-top:0">Noi giochiamo in:</p>
+                <button id="choiceHome" class="btn-choice" style="background:#444; color:white;" onclick="setNoi('Home')">CASA</button>
+                <button id="choiceAway" class="btn-choice" style="background:#444; color:white;" onclick="setNoi('Away')">TRASFERTA</button>
+            </div>
+            <input type="text" id="inputHome" placeholder="Nome Casa" style="width:90%; padding:10px; margin:5px;">
+            <input type="text" id="inputAway" placeholder="Nome Trasferta" style="width:90%; padding:10px; margin:5px;">
+            <button class="btn-azione full-width bg-green" onclick="salvaConfig()">SALVA</button>
+        </div>
+    </div>
+
+    <div id="modalFineQuarto" class="modal">
+        <div class="container-modal">
+            <h3 id="titoloFineQ">FINE QUARTO</h3>
+            <button class="btn-choice bg-green" onclick="azioneProssimoQuarto()">SUCCESSIVO</button>
+            <button class="btn-choice bg-red" style="color:white" onclick="azioneTerminaPartita()">TERMINA PARTITA</button>
+            <button class="btn-choice" style="background:none; color:white" onclick="chiudiModal('modalFineQuarto')">ANNULLA</button>
+        </div>
+    </div>
+
     <div id="modalTitolari" class="modal"><div class="container-modal"><h3 id="titTitolari">5 TITOLARI</h3><div class="grid-giocatori" id="titolariGrid"></div><button id="confirmTitolari" disabled onclick="confermaTitolari()" style="width:100%; padding:15px;">CONFERMA (0/5)</button></div></div>
-    <div id="modalCampo" class="modal"><div class="container-modal"><div id="mappaCampo" onclick="segnaPunto(event)"><div class="arco-tre"></div><div class="pitturato"></div><div class="canestro"></div></div><div style="display:flex; gap:10px; margin-top:10px;"><button style="flex:1; padding:15px; background:green; color:white;" onclick="regTiro('SEGNATO')">SI</button><button style="flex:1; padding:15px; background:red; color:white;" onclick="regTiro('SBAGLIATO')">NO</button></div></div></div>
+    
+    <div id="modalCampo" class="modal"><div class="container-modal"><h3 id="infoTiro">Tiro da ?</h3><div id="mappaCampo" onclick="segnaPunto(event)"><div class="arco-tre"></div><div class="pitturato"></div><div class="canestro"></div></div><div style="display:flex; gap:10px; margin-top:10px;"><button style="flex:1; padding:15px; background:green; color:white;" onclick="regTiro('SEGNATO')">SI</button><button style="flex:1; padding:15px; background:red; color:white;" onclick="regTiro('SBAGLIATO')">NO</button></div><button class="full-width" onclick="chiudiModal('modalCampo')" style="background:none; border:none; color:white; margin-top:10px;">ANNULLA</button></div></div>
+    
     <div id="modalFalloSubito" class="modal"><div class="container-modal"><h3>FALLO SUBITO</h3><button class="btn-azione full-width bg-grey" style="margin-bottom:5px;" onclick="concludiFalloSubito(false)">RIMESSA</button><button class="btn-azione full-width bg-yell" onclick="concludiFalloSubito(true)">LIBERI</button></div></div>
     <div id="modalLibero" class="modal"><div class="container-modal"><h3>LIBERI</h3><div id="liberi-sequenza" style="font-size:24px; margin:10px;"></div><button class="btn-azione bg-green" style="width:45%; display:inline-block;" onclick="regLib('SEGNATO')">OK</button><button class="btn-azione bg-red" style="width:45%; display:inline-block;" onclick="regLib('X')">X</button><button class="full-width" onclick="chiudiModal('modalLibero')">FINE</button></div></div>
     <div id="modalCambio" class="modal"><div class="container-modal"><h3>CAMBIO 🔄</h3><div id="outG" class="sub-grid"></div><div id="inG" class="sub-grid"></div><button id="confCambio" disabled onclick="eseguiCambio()" style="width:100%; padding:15px;">CONFERMA</button><button class="full-width" onclick="chiudiModal('modalCambio')" style="background:none; color:white; border:none; margin-top:10px;">ANNULLA</button></div></div>
@@ -140,19 +167,20 @@
 
         let nQ = 1, sH = 0, sA = 0, fH = 0, fA = 0, toH = 0, toA = 0;
         let inC = [], stats = [], selP = null, lX, lY, currentVal = 2;
-        let nameH = "CASA", nameA = "TRASFERTA";
+        let nameH = "CASA", nameA = "TRASFERTA", noiIsCasa = true;
         let pF = {}, pP = {};
         roster.forEach(n => { pF[n]=0; pP[n]=0; });
 
         function connettiCloud() {
             const id = document.getElementById('gameId').value.trim();
-            if(!id) return alert("Inserisci un nome partita!");
+            if(!id) return;
             gameRef = db.ref('games/' + id);
             gameRef.on('value', (snapshot) => {
                 const data = snapshot.val();
                 if (data) {
                     nQ = data.nQ; sH = data.sH; sA = data.sA; fH = data.fH; fA = data.fA;
                     toH = data.toH; toA = data.toA; nameH = data.nameH; nameA = data.nameA;
+                    noiIsCasa = data.noiIsCasa !== undefined ? data.noiIsCasa : true;
                     inC = data.inC || []; stats = data.stats || []; pF = data.pF || pF; pP = data.pP || pP;
                     document.getElementById('nameH').innerText = nameH;
                     document.getElementById('nameA').innerText = nameA;
@@ -168,7 +196,13 @@
             });
         }
 
-        function cloudSave() { if(gameRef) gameRef.set({ nQ, sH, sA, fH, fA, toH, toA, nameH, nameA, inC, stats, pF, pP }); }
+        function cloudSave() { if(gameRef) gameRef.set({ nQ, sH, sA, fH, fA, toH, toA, nameH, nameA, noiIsCasa, inC, stats, pF, pP }); }
+
+        function setNoi(pos) {
+            noiIsCasa = (pos === 'Home');
+            document.getElementById('choiceHome').style.background = noiIsCasa ? '#28a745' : '#444';
+            document.getElementById('choiceAway').style.background = !noiIsCasa ? '#28a745' : '#444';
+        }
 
         function toggleQuarto() {
             const btn = document.getElementById('btnStato');
@@ -176,18 +210,30 @@
                 fH = 0; fA = 0;
                 apriModalTitolari();
             } else {
-                if (confirm("Vuoi chiudere il quarto attuale?")) {
-                    let scelta = confirm("La partita è FINITA? \n\nPremi 'OK' per TERMINARE.\nPremi 'Annulla' per QUARTO SUCCESSIVO.");
-                    if (scelta) {
-                        document.getElementById('azioni').style.display = 'none';
-                        btn.innerText = "PARTITA FINITA"; btn.style.background = "#333"; btn.onclick = null;
-                    } else {
-                        nQ++; document.getElementById('azioni').style.display = 'none';
-                        btn.innerText = "INIZIA Q" + nQ; btn.style.background = "#28a745";
-                        selP = null; updateUI(); cloudSave();
-                    }
-                }
+                document.getElementById('titoloFineQ').innerText = "FINE QUARTO " + nQ;
+                apriModal('modalFineQuarto');
             }
+        }
+
+        function azioneProssimoQuarto() {
+            chiudiModal('modalFineQuarto');
+            nQ++;
+            document.getElementById('azioni').style.display = 'none';
+            document.getElementById('btnStato').innerText = "INIZIA Q" + nQ;
+            document.getElementById('btnStato').style.background = "#28a745";
+            selP = null;
+            updateUI();
+            cloudSave();
+        }
+
+        function azioneTerminaPartita() {
+            chiudiModal('modalFineQuarto');
+            document.getElementById('azioni').style.display = 'none';
+            const btn = document.getElementById('btnStato');
+            btn.innerText = "PARTITA FINITA";
+            btn.style.background = "#333";
+            btn.onclick = null;
+            cloudSave();
         }
 
         function apriModalTitolari() {
@@ -222,7 +268,9 @@
 
         function registraFalloFatto() { 
             if(!selP) return; 
-            pF[selP]++; fH++; salva("Fallo Fatto", selP, pF[selP]+"°");
+            pF[selP]++;
+            if(noiIsCasa) fH++; else fA++;
+            salva("Fallo Fatto", selP, pF[selP]+"°");
             updateUI(); if(pF[selP] >= 5) apriModalCambio(selP); cloudSave();
         }
 
@@ -231,6 +279,7 @@
             lX=Math.round(e.clientX-r.left); lY=Math.round(e.clientY-r.top);
             let d=Math.sqrt(Math.pow(lX-155,2)+Math.pow(lY-30,2));
             currentVal=(d>130||(lY<30&&(lX<20||lX>290)))?3:2;
+            document.getElementById('infoTiro').innerText = "Tiro da " + currentVal + " punti";
             document.querySelectorAll('.punto-tiro').forEach(p=>p.remove());
             const p=document.createElement('div'); p.className='punto-tiro';
             p.style.left=lX+"px"; p.style.top=lY+"px"; p.style.background=currentVal===3?"#ffeb3b":"#ff4444";
@@ -239,7 +288,10 @@
 
         function regTiro(esito){
             if(!selP||!lX)return;
-            if(esito==='SEGNATO'){ pP[selP]+=currentVal; sH+=currentVal; }
+            if(esito==='SEGNATO'){ 
+                pP[selP]+=currentVal; 
+                if(noiIsCasa) sH+=currentVal; else sA+=currentVal;
+            }
             salva("Tiro "+currentVal, selP, esito); chiudiModal('modalCampo'); updateUI(); cloudSave();
         }
 
@@ -304,12 +356,19 @@
             selP = null; chiudiModal('modalCambio'); updateUI(); cloudSave();
         }
 
-        function addOppPoint(v) { sA += v; salva("Punti Avv", "Osp", "+"+v); updateUI(); cloudSave(); }
+        function addOppPoint(v) { if(noiIsCasa) sA += v; else sH += v; salva("Punti Avv", "Osp", "+"+v); updateUI(); cloudSave(); }
         function addTO(team) { if(team==='Home') toH++; else toA++; updateUI(); cloudSave(); }
         function logQuick(a) { if(!selP) return; salva(a, selP, "-"); updateUI(); cloudSave(); }
         function apriModalLibero(){ document.getElementById('liberi-sequenza').innerHTML=""; apriModal('modalLibero'); }
-        function regLib(e){ if(e==='SEGNATO'){ pP[selP]++; sH++; } document.getElementById('liberi-sequenza').innerHTML += (e==='SEGNATO'?'✅':'❌'); salva("Libero", selP, e); updateUI(); cloudSave(); }
-        function concludiFalloSubito(lib){ fA++; chiudiModal('modalFalloSubito'); updateUI(); if(lib) apriModalLibero(); cloudSave(); }
+        function regLib(e){ 
+            if(e==='SEGNATO'){ 
+                pP[selP]++; 
+                if(noiIsCasa) sH++; else sA++; 
+            } 
+            document.getElementById('liberi-sequenza').innerHTML += (e==='SEGNATO'?'✅':'❌'); 
+            salva("Libero", selP, e); updateUI(); cloudSave(); 
+        }
+        function concludiFalloSubito(lib){ if(noiIsCasa) fA++; else fH++; chiudiModal('modalFalloSubito'); updateUI(); if(lib) apriModalLibero(); cloudSave(); }
         function salvaConfig(){ nameH=document.getElementById('inputHome').value||"CASA"; nameA=document.getElementById('inputAway').value||"TRASFERTA"; chiudiModal('modalConfig'); cloudSave(); }
         function salva(a,g,e){ stats.push({Q:nQ, G:g, Azione:a, Esito:e}); }
         function apriModal(id){ document.getElementById(id).style.display='flex'; }
