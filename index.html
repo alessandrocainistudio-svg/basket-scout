@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Basket Scout Pro - Final</title>
+    <title>Basket Scout Pro - FIX</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -12,21 +12,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
     <style>
-        /* STILI CSS */
+        /* STILI */
         :root { --bg: #121212; --surf: #1e1e1e; --prim: #ffeb3b; --err: #dc3545; --succ: #28a745; --info: #007bff; --warn: #ff9800; --text: #fff; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; overflow-x:hidden; touch-action: manipulation; }
-        
-        /* Reset e Base */
         button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; text-transform: uppercase; }
         input, select, textarea { background: #333; color: #fff; border: 1px solid #555; padding: 10px; width: 100%; box-sizing: border-box; margin: 5px 0; border-radius: 4px; }
-        
-        /* Utility Classi */
         .hidden { display: none !important; }
         .row { display: flex; gap: 8px; margin-bottom: 8px; }
         .full { width: 100%; }
         .btn-l { padding: 15px; font-size: 14px; }
         
-        /* Colori */
         .bg-prim { background: var(--prim); color: #000; }
         .bg-sec { background: #444; color: #fff; }
         .bg-succ { background: var(--succ); color: #fff; }
@@ -34,7 +29,6 @@
         .bg-info { background: var(--info); color: #fff; }
         .bg-warn { background: var(--warn); color: #000; }
 
-        /* Scoreboard */
         .scoreboard { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr; background: #000; padding: 10px; border: 1px solid #333; border-radius: 8px; text-align: center; margin-bottom: 10px; }
         .score { font-size: 40px; margin: 0; color: var(--prim); }
         .bonus { font-size: 10px; background: var(--warn); color: #000; padding: 2px 4px; border-radius: 4px; visibility: hidden; }
@@ -43,7 +37,6 @@
         .dot { width: 8px; height: 8px; background: #333; border-radius: 50%; }
         .dot.active { background: var(--err); }
 
-        /* Griglia Giocatori */
         .grid-p { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
         .p-card { background: var(--surf); border: 2px solid #444; padding: 10px 5px; border-radius: 8px; position: relative; height: 75px; color: #fff; }
         .p-card.on-court { border-color: var(--succ); box-shadow: inset 0 0 5px var(--succ); }
@@ -55,29 +48,24 @@
         .p-stat-f { position: absolute; bottom: 5px; right: 5px; background: var(--err); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
         .p-icon { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); font-size: 10px; color: cyan; font-weight: bold; }
 
-        /* Azioni */
         .actions-grid { display: grid; gap: 8px; }
         .act-row-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
         .act-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
 
-        /* Modali */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 10px; box-sizing: border-box; }
         .modal-content { background: var(--surf); width: 100%; max-width: 500px; padding: 15px; border-radius: 10px; border: 1px solid #444; margin-top: 20px; }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
         
-        /* Mappa Campo */
         #court-map { width: 300px; height: 260px; background: #d2a679; margin: 0 auto; position: relative; border: 2px solid #fff; border-radius: 4px; overflow: hidden; }
         .c-rim { position: absolute; top: 35px; left: 150px; width: 12px; height: 12px; border: 2px solid #e65100; border-radius: 50%; transform: translate(-50%,-50%); }
         .c-3pt { position: absolute; top: -80px; left: 20px; width: 260px; height: 240px; border: 2px solid #fff; border-radius: 0 0 130px 130px; pointer-events: none; }
         .c-paint { position: absolute; top: 0; left: 110px; width: 80px; height: 120px; border: 2px solid #fff; pointer-events: none; }
         .shot-mark { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; transform: translate(-50%,-50%); border: 1px solid #000; }
 
-        /* Flash */
         @keyframes flashAnim { 0% { opacity: 0.8; } 100% { opacity: 0; } }
         .flash-overlay { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 2000; opacity: 0; }
         .flash-active { animation: flashAnim 0.3s ease-out; }
 
-        /* Roster Items */
         .roster-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
         .check-player { display: flex; align-items: center; background: #222; padding: 10px; border-bottom: 1px solid #333; }
         .check-player input { width: auto; margin-right: 10px; }
@@ -334,18 +322,22 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // Stato Globale
+        let activeGameRef = null; // Riferimento al DB
         let g = {
-            id: null, ref: null, home: true, q: 1, minQ: 10, minOT: 5,
+            id: null, home: true, q: 1, minQ: 10, minOT: 5,
             sH: 0, sA: 0, fH: 0, fA: 0, tH: 0, tA: 0,
-            players: {}, // { "10": { name, pts, f, t, u, d, min, lastIn, shots:[] } }
-            opp: [], // [{n:4, f:0}]
-            events: [], // [{id, q, type, p, desc, val}]
-            onCourt: [], // ["10", "11"...]
-            sel: null, // Giocatore selezionato
-            rosters: {},
-            specType: null
+            players: {}, opp: [], events: [], onCourt: [], sel: null,
+            rosters: {}, specType: null
         };
+
+        // --- SALVATAGGIO SICURO ---
+        function saveGame() {
+            if(!activeGameRef) return;
+            // Clona g senza riferimenti circolari
+            const data = JSON.parse(JSON.stringify(g)); 
+            delete data.rosters; // Non serve salvare i roster nella partita
+            activeGameRef.set(data);
+        }
 
         // --- 2. NAVIGAZIONE ---
         function nav(id) {
@@ -362,7 +354,6 @@
             db.ref('rosters').on('value', snap => {
                 g.rosters = snap.val() || {};
                 renderRosterList();
-                // Popola select setup
                 const sel = document.getElementById('setup-roster-sel');
                 sel.innerHTML = '<option value="">Seleziona...</option><option value="MANUAL">MANUALE</option>';
                 Object.keys(g.rosters).forEach(k => {
@@ -436,9 +427,7 @@
             document.getElementById('btn-away').style.background = !isHome ? 'var(--succ)' : '#444';
         }
 
-        function checkManualInput(val) {
-            // Logica se manuale (non necessario implementare extra UI ora, usiamo lista vuota)
-        }
+        function checkManualInput(val) {}
 
         function goToConvocazioni() {
             g.id = document.getElementById('setup-code').value.trim();
@@ -458,7 +447,6 @@
                     </div>`;
                 });
             } else {
-                // Manuale: 12 slot vuoti
                 for(let i=0; i<12; i++) {
                     listNoi.innerHTML += `
                     <div class="check-player">
@@ -472,49 +460,56 @@
         }
 
         function startGame() {
-            // Init Players Noi
-            g.players = {};
-            const rName = document.getElementById('setup-roster-sel').value;
-            
-            if(rName && rName !== "MANUAL") {
-                document.querySelectorAll('#conv-list-noi input[type="checkbox"]:checked').forEach(c => {
-                    const n = c.value;
-                    const name = c.dataset.name;
-                    initPlayer(n, name);
+            try {
+                // Init Players Noi
+                g.players = {};
+                const rName = document.getElementById('setup-roster-sel').value;
+                let count = 0;
+
+                if(rName && rName !== "MANUAL") {
+                    document.querySelectorAll('#conv-list-noi input[type="checkbox"]:checked').forEach(c => {
+                        const n = c.value;
+                        const name = c.dataset.name;
+                        initPlayer(n, name);
+                        count++;
+                    });
+                } else {
+                    document.querySelectorAll('#conv-list-noi .check-player').forEach(d => {
+                        if(d.querySelector('.man-chk').checked) {
+                            const n = d.querySelector('.man-n').value;
+                            const name = d.querySelector('.man-name').value || "Giocatore";
+                            if(n) { initPlayer(n, name); count++; }
+                        }
+                    });
+                }
+
+                if(count === 0 && !confirm("Nessun giocatore selezionato. Continuare?")) return;
+
+                // Init Opponents
+                g.opp = [];
+                const txt = document.getElementById('conv-list-loro').value;
+                txt.split(/[\s,]+/).forEach(n => {
+                    if(n) g.opp.push({n: n, f: 0});
                 });
-            } else {
-                document.querySelectorAll('#conv-list-noi .check-player').forEach(d => {
-                    if(d.querySelector('.man-chk').checked) {
-                        const n = d.querySelector('.man-n').value;
-                        const name = d.querySelector('.man-name').value;
-                        if(n) initPlayer(n, name);
-                    }
-                });
+
+                g.minQ = parseInt(document.getElementById('setup-mins').value);
+                g.minOT = parseInt(document.getElementById('setup-ot').value);
+                
+                const oppName = document.getElementById('setup-opp-name').value || "OSPITI";
+                document.getElementById('l-home').innerText = g.home ? "NOI" : oppName;
+                document.getElementById('l-away').innerText = !g.home ? "NOI" : oppName;
+                document.getElementById('code-disp').innerText = g.id;
+
+                // DB Connect & Save
+                activeGameRef = db.ref('games/' + g.id);
+                saveGame(); // Salva senza rompere il database
+
+                nav('view-game');
+                updateUI();
+            } catch(e) {
+                alert("Errore avvio: " + e.message);
+                console.error(e);
             }
-
-            // Init Opponents
-            g.opp = [];
-            const txt = document.getElementById('conv-list-loro').value;
-            txt.split(/[\s,]+/).forEach(n => {
-                if(n) g.opp.push({n: n, f: 0});
-            });
-
-            // Settings
-            g.minQ = parseInt(document.getElementById('setup-mins').value);
-            g.minOT = parseInt(document.getElementById('setup-ot').value);
-            
-            // Labels
-            const oppName = document.getElementById('setup-opp-name').value || "OSPITI";
-            document.getElementById('l-home').innerText = g.home ? "NOI" : oppName;
-            document.getElementById('l-away').innerText = !g.home ? "NOI" : oppName;
-            document.getElementById('code-disp').innerText = g.id;
-
-            // DB Init
-            g.ref = db.ref('games/' + g.id);
-            g.ref.set(g);
-
-            nav('view-game');
-            updateUI();
         }
 
         function initPlayer(n, name) {
@@ -527,7 +522,7 @@
             db.ref('games/'+id).once('value', s => {
                 if(s.exists()) {
                     g = s.val();
-                    g.ref = db.ref('games/'+id);
+                    activeGameRef = db.ref('games/'+id);
                     nav('view-game');
                     updateUI();
                 } else alert("Non trovata");
@@ -537,7 +532,6 @@
         // --- 5. LOGICA PARTITA ---
         
         function updateUI() {
-            // Scoreboard
             document.getElementById('s-home').innerText = g.sH;
             document.getElementById('s-away').innerText = g.sA;
             document.getElementById('f-home').innerText = g.fH;
@@ -546,19 +540,17 @@
             document.getElementById('b-away').classList.toggle('active', g.fA >= 5);
             document.getElementById('q-disp').innerText = "Q" + g.q;
             
-            // Timeouts
             let dotH = ""; for(let i=0;i<g.tH;i++) dotH += '<div class="dot active"></div>';
             document.getElementById('to-home').innerHTML = dotH;
             let dotA = ""; for(let i=0;i<g.tA;i++) dotA += '<div class="dot active"></div>';
             document.getElementById('to-away').innerHTML = dotA;
 
-            // Grid
             const div = document.getElementById('grid-players');
             div.innerHTML = "";
             Object.values(g.players).sort((a,b)=>parseInt(a.n)-parseInt(b.n)).forEach(p => {
                 const onCourt = g.onCourt.includes(p.n);
                 const isSel = g.sel === p.n;
-                const isOut = (p.f >= 5 || p.d > 0 || (p.t >= 2) || (p.u >= 2) || (p.t+p.u >= 2));
+                const isOut = (p.f >= 5 || p.d > 0 || (p.t+p.u >= 2));
                 const specs = (p.t?"T"+p.t:"") + (p.u?"U"+p.u:"") + (p.d?"D":"");
                 
                 div.innerHTML += `
@@ -571,12 +563,11 @@
                 </div>`;
             });
 
-            // Cloud Save
-            if(g.ref) g.ref.set(g);
+            saveGame();
         }
 
         function selP(n) {
-            if(!g.onCourt.includes(n)) return; // Selezionabile solo se in campo
+            if(!g.onCourt.includes(n)) return; 
             g.sel = (g.sel === n) ? null : n;
             updateUI();
         }
@@ -589,37 +580,32 @@
             f.classList.add('flash-active');
         }
 
-        // --- GESTIONE QUARTI E MINUTI ---
         function handleQuarter() {
             const btn = document.getElementById('btn-q');
             if(btn.innerText.includes("INIZIO")) {
-                // Apri quintetto
                 const lst = document.getElementById('list-starters');
                 lst.innerHTML = "";
                 tempStart = [];
                 Object.values(g.players).forEach(p => {
-                    if(!(p.f>=5 || p.d>0)) { // Filtra espulsi
+                    if(!(p.f>=5 || p.d>0 || p.t+p.u>=2)) {
                         lst.innerHTML += `<div class="p-card" id="st-${p.n}" onclick="togStart('${p.n}')"><span class="p-num">${p.n}</span><span class="p-name">${p.name}</span></div>`;
                     }
                 });
                 document.getElementById('btn-conf-start').disabled = true;
                 openModal('mod-starters');
             } else {
-                // Fine Quarto
                 if(!confirm("Terminare il Quarto?")) return;
-                // Calcola minuti finali per chi è in campo
                 const dur = (g.q > 4) ? g.minOT * 60 : g.minQ * 60;
                 g.onCourt.forEach(n => {
                     const p = g.players[n];
-                    p.min += (p.lastIn - 0); // Hanno giocato fino alla fine (00:00)
+                    p.min += (p.lastIn - 0); 
                 });
                 
-                // Reset falli squadra e TO se intervallo lungo
                 g.fH = 0; g.fA = 0;
                 if(g.q === 2) { g.tH = 0; g.tA = 0; }
                 
                 g.q++;
-                g.onCourt = []; // Reset campo
+                g.onCourt = []; 
                 document.getElementById('btn-q').innerText = "INIZIO Q" + g.q;
                 document.getElementById('btn-q').className = "bg-succ";
                 document.getElementById('actions-panel').style.opacity = "0.3";
@@ -644,7 +630,6 @@
         function confirmStarters() {
             g.onCourt = [...tempStart];
             const dur = (g.q > 4) ? g.minOT * 60 : g.minQ * 60;
-            // Setta tempo ingresso all'inizio del quarto
             g.onCourt.forEach(n => g.players[n].lastIn = dur);
             
             document.getElementById('btn-q').innerText = "FINE Q" + g.q;
@@ -655,11 +640,11 @@
             updateUI();
         }
 
-        // --- AZIONI DI GIOCO ---
+        // --- AZIONI ---
         function addLog(type, val, desc) {
             g.events.push({
                 id: Date.now(), q: g.q, p: g.sel, type, val, desc, 
-                score: {h: g.sH, a: g.sA} // snapshot punteggio
+                score: {h: g.sH, a: g.sA}
             });
         }
 
@@ -670,15 +655,12 @@
             const rect = document.getElementById('court-map').getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            
-            // Logica distanza 3 punti (semplificata)
             const dx = x - 150; const dy = y - 35;
             const dist = Math.sqrt(dx*dx + dy*dy);
-            const val = (dist > 120) ? 3 : 2; // soglia pixel
+            const val = (dist > 120) ? 3 : 2; 
             
             lastShot = {x, y, val};
             
-            // Visual
             const m = document.createElement('div');
             m.className = "shot-mark";
             m.style.left = x+"px"; m.style.top = y+"px";
@@ -710,7 +692,6 @@
                     p.pts += 1;
                     if(g.home) g.sH += 1; else g.sA += 1;
                 }
-                // Nota: salviamo statistica FT generica o dettagliata a piacere
                 addLog("TL", made?1:0, made?"Segnato":"Sbagliato");
                 updateUI();
             }
@@ -739,7 +720,7 @@
         function selOppFoul(n) {
             const o = g.opp.find(x => x.n == n);
             o.f++;
-            if(!g.home) g.fH++; else g.fA++; // Fallo avversario aumenta falli LORO
+            if(!g.home) g.fH++; else g.fA++;
             updateUI();
         }
 
@@ -747,7 +728,6 @@
             if(!g.sel) return;
             flash('blue');
             addLog(type, 0, type);
-            // Qui potresti incrementare contatori specifici nel player object se servono
             updateUI();
         }
 
@@ -762,7 +742,7 @@
             updateUI();
         }
 
-        // --- GESTIONE CAMBI ---
+        // --- CAMBI ---
         let subOut = [], subIn = [];
         function openSub() {
             const listIn = document.getElementById('sub-list-in');
@@ -791,25 +771,24 @@
                 if(subIn.includes(n)) { subIn = subIn.filter(x=>x!==n); div.classList.remove('selected'); }
                 else { subIn.push(n); div.classList.add('selected'); }
             }
-            // Validazione
             const t = document.getElementById('sub-time').value;
             const validT = t.length >= 3 && parseInt(t.slice(-2)) < 60;
             document.getElementById('btn-conf-sub').disabled = !(subIn.length === subOut.length && subIn.length > 0 && validT);
         }
 
         function execSub() {
-            const tStr = document.getElementById('sub-time').value; // es 430
+            const tStr = document.getElementById('sub-time').value;
             const sec = parseInt(tStr.slice(0, -2)) * 60 + parseInt(tStr.slice(-2));
             
             subOut.forEach(n => {
                 const p = g.players[n];
-                p.min += (p.lastIn - sec); // Ha giocato da lastIn fino a ora
+                p.min += (p.lastIn - sec); 
                 g.onCourt = g.onCourt.filter(x => x !== n);
             });
             
             subIn.forEach(n => {
                 const p = g.players[n];
-                p.lastIn = sec; // Entra ora
+                p.lastIn = sec; 
                 g.onCourt.push(n);
             });
             
@@ -822,7 +801,6 @@
         function openSpecials() {
             g.specType = null;
             document.querySelectorAll('#mod-spec button').forEach(b => b.classList.remove('bg-warn'));
-            // Render Players
             const d = document.getElementById('spec-players');
             d.innerHTML = "";
             Object.values(g.players).forEach(p => {
@@ -833,22 +811,19 @@
         
         function selSpType(t) {
             g.specType = t;
-            // Highlight button...
         }
 
         function assignSpec(target) {
             if(!g.specType) return alert("Seleziona tipo fallo");
             if(target === 'BENCH') {
-                // Fallo panchina (non conta falli squadra o personali solitamente, o logica custom)
                 addLog("SPECIALE", 0, "Panchina "+g.specType);
             } else {
                 const p = g.players[target];
                 if(g.specType === 'T') p.t++;
                 if(g.specType === 'U') p.u++;
                 if(g.specType === 'D') p.d++;
-                p.f++; // Conta come personale
-                if(g.home) g.fH++; else g.fA++; // Conta come squadra
-                
+                p.f++; 
+                if(g.home) g.fH++; else g.fA++; 
                 addLog("SPECIALE", 0, `${target} ${g.specType}`);
             }
             closeModal('mod-spec');
@@ -859,8 +834,6 @@
         function undoLast() {
             if(g.events.length === 0) return;
             const last = g.events.pop();
-            // Undo brutale: ricarica ultimo snapshot o revert logica manuale
-            // Per semplicità qui avvisiamo l'utente che deve correggere i punteggi
             alert("Evento rimosso: " + last.desc + ". Controlla punteggi e falli manualmente.");
             updateUI();
         }
@@ -924,7 +897,6 @@
             });
             doc.save("Scout_"+g.id+".pdf");
         }
-
     </script>
 </body>
 </html>
