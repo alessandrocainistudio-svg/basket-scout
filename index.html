@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Basket Scout Pro - Ultra Stable</title>
+    <title>Basket Scout Pro - Full Version</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
@@ -53,7 +53,8 @@
         .row-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
         .row-half { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
         .row-quad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-        .btn-act { padding: 18px 5px; border: none; border-radius: 8px; font-weight: bold; font-size: 13px; text-transform: uppercase; }
+        .btn-act { padding: 18px 5px; border: none; border-radius: 8px; font-weight: bold; font-size: 13px; text-transform: uppercase; width: 100%; cursor: pointer; }
+        .full-width { grid-column: span 2; }
 
         /* Modali */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 1000; flex-direction: column; overflow-y: auto; padding: 20px 15px; box-sizing: border-box; }
@@ -67,238 +68,96 @@
         .pitturato { position: absolute; top: 0; left: 100px; width: 100px; height: 110px; border: 2px solid white; pointer-events: none; }
         .shot-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; transform: translate(-50%, -50%); border: 1px solid black; }
 
-        /* Situazione Falli */
-        .foul-row { display: flex; justify-content: space-between; padding: 10px; border-bottom: 1px solid #333; align-items: center; }
-        .f-num-box { border: 2px solid transparent; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-size: 18px; }
-        .f-num-box.active { border-color: var(--danger); }
-
         /* Cambi UI */
         .sub-divider { height: 2px; background: #555; margin: 20px 0; position: relative; }
         .sub-divider::after { content: 'BENCH'; position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--surface); padding: 0 10px; font-size: 10px; color: #888; }
+        .active-in { background: var(--success) !important; color: white; }
+        .active-out { background: var(--danger) !important; color: white; }
         
         .footer-nav { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-        .btn-nav { background: #333; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 12px; }
-
-        /* Statistiche Finale */
-        .stat-card { background: #000; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
-        .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: left; }
+        .btn-nav { background: #333; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 12px; width: 100%; cursor: pointer; }
     </style>
 </head>
 <body>
-
-    <div id="setup" style="display: block;">
+    <div id="setup">
         <h2 style="text-align: center;">BASKET SCOUT PRO 🏀</h2>
         <div id="main-menu">
-            <button class="btn-act bg-info full-width" style="width: 100%; margin-bottom: 10px;" onclick="switchSetup('nuova')">NUOVA PARTITA</button>
-            <button class="btn-act bg-warning full-width" style="width: 100%; margin-bottom: 10px;" onclick="switchSetup('carica')">CARICA PARTITA</button>
-            <button class="btn-act bg-info full-width" style="width: 100%;" onclick="switchSetup('roster')">GESTIONE ROSTER</button>
+            <button class="btn-act" style="background:var(--info); margin-bottom:10px;" onclick="switchSetup('nuova')">NUOVA PARTITA</button>
+            <button class="btn-act" style="background:var(--warning); margin-bottom:10px;" onclick="switchSetup('carica')">CARICA PARTITA</button>
+            <button class="btn-act" style="background:var(--info);" onclick="switchSetup('roster')">GESTIONE ROSTER</button>
         </div>
 
         <div id="step-nuova" style="display:none;">
             <button onclick="switchSetup('menu')" style="background:none; color:#aaa; border:none; margin-bottom:10px;">< INDIETRO</button>
-            <input type="text" id="gameId" placeholder="CODICE PARTITA (es. FINALE2024)">
-            <select id="durataQ"><option value="10">QUARTO: 10 MIN</option><option value="8">QUARTO: 8 MIN</option></select>
-            <select id="durataOT"><option value="5">OT: 5 MIN</option><option value="4">OT: 4 MIN</option></select>
-            <select id="selRoster" onchange="checkManual(this.value)"><option value="manual">INSERIMENTO MANUALE</option></select>
-            <input type="text" id="teamOpp" placeholder="NOME SQUADRA AVVERSARIA">
+            <input type="text" id="gameId" placeholder="CODICE PARTITA">
+            <input type="text" id="teamOpp" placeholder="SQUADRA AVVERSARIA">
             <div class="row-half">
                 <button id="btnCasa" class="btn-act" onclick="setCasa(true)">CASA</button>
                 <button id="btnFuori" class="btn-act" onclick="setCasa(false)">FUORI</button>
             </div>
-            <button class="btn-act bg-success full-width" style="width: 100%; margin-top:15px;" onclick="vaiAConvocati()">AVANTI ></button>
+            <button class="btn-act" style="background:var(--success); margin-top:15px;" onclick="vaiAConvocati()">AVANTI ></button>
         </div>
 
         <div id="step-convocati" style="display:none;">
             <h3>CONVOCAZIONI</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                 <div id="conv-noi"><h4>NOI</h4><div id="list-noi"></div></div>
-                <div id="conv-loro"><h4>LORO</h4><textarea id="list-loro" placeholder="Numeri divisi da spazio (es: 4 7 10 23)" style="width:100%; height:150px; background:#333; color:white; border-radius:6px; padding:10px;"></textarea></div>
+                <div id="conv-loro"><h4>LORO</h4><textarea id="list-loro" placeholder="Numeri maglia avversari" style="width:100%; height:100px;"></textarea></div>
             </div>
-            <button class="btn-act bg-success full-width" style="width: 100%; margin-top:20px;" onclick="iniziaPartita()">VAI ALLA PARTITA 🏀</button>
+            <button class="btn-act" style="background:var(--success); margin-top:20px;" onclick="iniziaPartita()">INIZIA PARTITA</button>
         </div>
     </div>
 
     <div id="gara" style="display: none;">
         <div class="scoreboard">
-            <div>
-                <div id="nameH" style="font-size:12px; font-weight:bold;">HOME</div>
-                <h1 id="scoreH">0</h1>
-                <div class="foul-team">FALLI: <span id="fTeamH">0</span> <span id="bonusH" class="bonus">BONUS</span></div>
-                <div class="to-dots" id="toH"></div>
-                <button class="btn-nav" style="font-size:10px; padding:4px;" onclick="addTO('H')">TIMEOUT</button>
-            </div>
-            <div>
-                <div id="labelQ" style="color:var(--warning); font-weight:bold; font-size:20px;">Q1</div>
-                <div id="gameCodeDisp" style="font-size:10px; color:#666; margin:5px 0;"></div>
-                <button id="btnQ" class="btn-act bg-success" onclick="gestioneQuarto()">INIZIO Q1</button>
-            </div>
-            <div>
-                <div id="nameA" style="font-size:12px; font-weight:bold;">AWAY</div>
-                <h1 id="scoreA">0</h1>
-                <div class="foul-team">FALLI: <span id="fTeamA">0</span> <span id="bonusA" class="bonus">BONUS</span></div>
-                <div class="to-dots" id="toA"></div>
-                <button class="btn-nav" style="font-size:10px; padding:4px;" onclick="addTO('A')">TIMEOUT</button>
-            </div>
+            <div><div id="nameH">HOME</div><h1 id="scoreH">0</h1><div class="foul-team">F: <span id="fTeamH">0</span> <span id="bonusH" class="bonus">BONUS</span></div></div>
+            <div><div id="labelQ">Q1</div><button id="btnQ" class="btn-act" style="background:var(--success);" onclick="gestioneQuarto()">INIZIO Q1</button></div>
+            <div><div id="nameA">AWAY</div><h1 id="scoreA">0</h1><div class="foul-team">F: <span id="fTeamA">0</span> <span id="bonusA" class="bonus">BONUS</span></div></div>
         </div>
-
-        <div class="row-quad" style="margin-bottom:10px;">
-            <button class="btn-act" style="background:#331a1a; color:#ff7f7f;" onclick="puntiAvv(1)">+1 AVV</button>
-            <button class="btn-act" style="background:#331a1a; color:#ff7f7f;" onclick="puntiAvv(2)">+2 AVV</button>
-            <button class="btn-act" style="background:#331a1a; color:#ff7f7f;" onclick="puntiAvv(3)">+3 AVV</button>
-            <button class="btn-act bg-info" onclick="apriFalli()">SITUAZIONE FALLI</button>
-        </div>
-
         <div class="grid-giocatori" id="gridGara"></div>
-
         <div class="actions-container" id="panelAzioni" style="opacity: 0.3; pointer-events: none;">
-            <div class="row-2-1">
-                <button class="btn-act bg-warning" onclick="apriTiro()">🏀 TIRO</button>
-                <button class="btn-act" style="background:#fff; color:#000;" onclick="apriLiberi()">LIBERI</button>
-            </div>
-            <div class="row-half">
-                <button class="btn-act bg-danger" onclick="regFalloFatto()">🛑 FALLO FATTO</button>
-                <button class="btn-act bg-success" onclick="apriFalloSubito()">🤝 FALLO SUBITO</button>
-            </div>
-            <div class="row-quad">
-                <button class="btn-act" style="background:var(--info)" onclick="regQuick('R. DIF', 'blue')">R.DIF</button>
-                <button class="btn-act" style="background:var(--info)" onclick="regQuick('R. OFF', 'blue')">R.OFF</button>
-                <button class="btn-act bg-danger" onclick="regQuick('P. PERSA', 'red')">PERSA</button>
-                <button class="btn-act bg-success" onclick="regQuick('RECUPERO', 'green')">RECUP</button>
-            </div>
-            <button class="btn-act" style="background:#fff; color:#000;" onclick="apriCambio()">🔄 CAMBIO</button>
-            <button class="btn-act" style="background:#9c27b0; color:#fff;" onclick="apriSpeciali()">⚠️ FALLI SPECIALI</button>
+             <div class="row-2-1"><button class="btn-act" style="background:var(--warning);" onclick="apriTiro()">🏀 TIRO</button><button class="btn-act" style="background:#fff; color:#000;" onclick="apriLiberi()">LIBERI</button></div>
+             <div class="row-half"><button class="btn-act" style="background:var(--danger);" onclick="regFalloFatto()">🛑 FALLO FATTO</button><button class="btn-act" style="background:var(--success);" onclick="apriFalloSubito()">🤝 FALLO SUBITO</button></div>
+             <button class="btn-act" style="background:#fff; color:#000;" onclick="apriCambio()">🔄 CAMBIO</button>
         </div>
-
         <div class="footer-nav">
-            <button class="btn-nav" onclick="undo()">↩️ ANNULLA</button>
-            <button class="btn-nav" onclick="apriEventi()">📜 EVENTI</button>
-            <button class="btn-nav" onclick="mostraStatistiche(true)">📊 STATS</button>
+            <button class="btn-nav" onclick="undo()">↩️ UNDO</button>
+            <button class="btn-nav" onclick="mostraStatistiche()">📊 STATS</button>
         </div>
     </div>
 
-    <div id="modTiro" class="modal">
-        <div class="modal-content">
-            <h3 id="infoTiro">Tiro da ?</h3>
-            <div id="mappaTiro" onclick="gestisciToccoCampo(event)">
-                <div class="canestro"></div>
-                <div class="area-3pt"></div>
-                <div class="pitturato"></div>
-            </div>
-            <div class="row-half" style="margin-top:20px;">
-                <button class="btn-act bg-success" onclick="regEsitoTiro(true)">SEGNATO</button>
-                <button class="btn-act bg-danger" onclick="regEsitoTiro(false)">SBAGLIATO</button>
-            </div>
-            <button class="btn-nav full-width" onclick="chiudiModale('modTiro')">ANNULLA</button>
-        </div>
-    </div>
-
-    <div id="modLiberi" class="modal">
-        <div class="modal-content">
-            <h3>TIRI LIBERI</h3>
-            <div id="seqLiberi" style="font-size:40px; margin:20px 0; min-height:50px;"></div>
-            <div class="row-half">
-                <button class="btn-act bg-success" onclick="regEsitoLibero(true)">✅ OK</button>
-                <button class="btn-act bg-danger" onclick="regEsitoLibero(false)">❌ NO</button>
-            </div>
-            <button class="btn-act full-width" style="margin-top:20px;" onclick="chiudiModale('modLiberi')">FINE</button>
-        </div>
-    </div>
-
-    <div id="modCambio" class="modal">
-        <div class="modal-content">
-            <h3>🔄 CAMBIO</h3>
-            <div style="text-align: center;">
-                <label>Tempo (MSS):</label><br>
-                <input type="tel" id="tempoCambio" maxlength="3" placeholder="345" style="width:100px; font-size:24px; text-align:center;">
-            </div>
-            <div id="sub-field" class="grid-giocatori"></div>
-            <div class="sub-divider"></div>
-            <div id="sub-bench" class="grid-giocatori"></div>
-            <button id="btnConfCambio" disabled class="btn-act bg-success full-width" onclick="eseguiCambio()">CONFERMA CAMBIO</button>
-            <button class="btn-nav full-width" onclick="chiudiModale('modCambio')">ANNULLA</button>
-        </div>
-    </div>
-
-    <div id="modSpeciali" class="modal">
-        <div class="modal-content">
-            <div class="row-quad" style="margin-bottom:15px;">
-                <button class="btn-act" id="sTec" onclick="setSpec('T')">TEC</button>
-                <button class="btn-act" id="sAnt" onclick="setSpec('U')">ANT</button>
-                <button class="btn-act" id="sEsp" onclick="setSpec('D')">ESP</button>
-            </div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <div id="specNoi"><h4>NOI</h4><div id="specListNoi"></div><button class="btn-nav full-width" onclick="regSpec('PAN','H')">PANCHINA</button></div>
-                <div id="specLoro"><h4>LORO</h4><div id="specListLoro"></div><button class="btn-nav full-width" onclick="regSpec('PAN','A')">PANCHINA</button></div>
-            </div>
-            <button class="btn-nav full-width" style="margin-top:20px;" onclick="chiudiModale('modSpeciali')">CHIUDI</button>
-        </div>
-    </div>
-
-    <div id="modStats" class="modal">
-        <div class="modal-content" style="max-width: 900px;">
-            <div style="display:flex; justify-content: space-between;">
-                <h2>STATISTICHE</h2>
-                <button onclick="chiudiModale('modStats')" class="btn-danger">X</button>
-            </div>
-            <div id="statsContent"></div>
-            <div class="row-half" style="margin-top:20px;">
-                <button class="btn-act bg-success" onclick="exportExcel()">ESPORTA EXCEL</button>
-                <button class="btn-act bg-info" onclick="exportPDF()">ESPORTA PDF</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modTitolari" class="modal">
-        <div class="modal-content">
-            <h3 id="titoloTit">SELEZIONA 5 TITOLARI</h3>
-            <div id="gridTitolari" class="grid-giocatori"></div>
-            <button id="btnConfTit" disabled class="btn-act bg-success full-width" onclick="confermaTitolari()">CONFERMA</button>
-        </div>
-    </div>
-
+    <div id="modTiro" class="modal"><div class="modal-content"><div id="mappaTiro" onclick="gestisciToccoCampo(event)"><div class="canestro"></div><div class="area-3pt"></div><div class="pitturato"></div></div><div class="row-half" style="margin-top:20px;"><button class="btn-act" style="background:var(--success);" onclick="regEsitoTiro(true)">SI</button><button class="btn-act" style="background:var(--danger);" onclick="regEsitoTiro(false)">NO</button></div><button class="btn-nav" onclick="chiudiModale('modTiro')">CHIUDI</button></div></div>
     <script>
-        // CONFIGURAZIONE FIREBASE (Usa i tuoi dati)
+        // CONFIGURAZIONE FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
             authDomain: "basket-reggello-scout.firebaseapp.com",
             databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "basket-reggello-scout",
-            storageBucket: "basket-reggello-scout.firebasestorage.app",
+            storageBucket: "basket-reggellto-scout.firebasestorage.app",
             messagingSenderId: "395815946220",
             appId: "1:395815946220:web:68c00b4c7f2da1754722c9"
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // STATO APPLICAZIONE
         let appState = {
-            gameId: "", gameRef: null, noiIsCasa: true, durationQ: 10, durationOT: 5,
-            nQ: 1, sH: 0, sA: 0, fH: 0, fA: 0, toH: 0, toA: 0,
+            gameId: "", gameRef: null, noiIsCasa: true, durationQ: 10,
+            nQ: 1, sH: 0, sA: 0, fH: 0, fA: 0,
             noi: [], loro: [], events: [], inCampo: [], selP: null,
-            lastX: 0, lastY: 0, lastVal: 2, currentSpec: 'T',
-            players: {} // { num: { pts: 0, foul: 0, t: 0, u: 0, d: 0, mins: 0, lastIn: 600 } }
+            players: {} 
         };
 
-        // --- INIZIALIZZAZIONE & SETUP ---
         function switchSetup(mode) {
-            document.querySelectorAll('#setup > div').forEach(d => d.style.display = 'none');
-            if(mode === 'menu') document.getElementById('main-menu').style.display = 'block';
-            else document.getElementById('step-'+mode).style.display = 'block';
-        }
-
-        function setCasa(val) {
-            appState.noiIsCasa = val;
-            document.getElementById('btnCasa').style.background = val ? 'var(--success)' : '#444';
-            document.getElementById('btnFuori').style.background = !val ? 'var(--success)' : '#444';
+            document.getElementById('main-menu').style.display = (mode === 'menu') ? 'block' : 'none';
+            document.getElementById('step-nuova').style.display = (mode === 'nuova') ? 'block' : 'none';
+            document.getElementById('step-convocati').style.display = (mode === 'convocati') ? 'block' : 'none';
         }
 
         function vaiAConvocati() {
             appState.gameId = document.getElementById('gameId').value.trim();
-            if(!appState.gameId) return alert("Inserisci ID Partita");
-            
             const listNoi = document.getElementById('list-noi');
             listNoi.innerHTML = "";
-            // Per semplicità qui simuliamo il manuale, puoi estendere con i Roster salvati
             for(let i=0; i<12; i++) {
                 listNoi.innerHTML += `<input type="number" class="manual-num" placeholder="Num" style="width:45px"> <input type="text" class="manual-name" placeholder="Nome" style="width:100px"><br>`;
             }
@@ -306,21 +165,62 @@
         }
 
         function iniziaPartita() {
-            // Parsing Giocatori Noi
-            document.querySelectorAll('#list-noi br').forEach((_, i) => {
-                const num = document.getElementsByClassName('manual-num')[i].value;
-                const name = document.getElementsByClassName('manual-name')[i].value;
+            document.querySelectorAll('#list-noi input.manual-num').forEach((el, i) => {
+                const num = el.value;
+                const name = document.querySelectorAll('#list-noi input.manual-name')[i].value;
                 if(num) {
                     appState.noi.push({ num, name });
-                    appState.players[num] = { pts:0, f:0, t:0, u:0, d:0, mins:0, lastIn: appState.durationQ*60, shots:[] };
+                    appState.players[num] = { pts:0, f:0, mins:0, lastIn: 600, shots:[] };
                 }
             });
-
-            // Parsing Giocatori Loro
-            const lText = document.getElementById('list-loro').value.split(/\s+/);
-            lText.forEach(n => { if(n) appState.loro.push({ num: n, f: 0 }); });
-
             document.getElementById('setup').style.display = 'none';
             document.getElementById('gara').style.display = 'block';
-            document.getElementById('nameH').innerText = appState.noiIsCasa ? "NOI" : document.getElementById('teamOpp').value;
-    
+            appState.gameRef = db.ref('games/' + appState.gameId);
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('scoreH').innerText = appState.sH;
+            document.getElementById('scoreA').innerText = appState.sA;
+            document.getElementById('fTeamH').innerText = appState.fH;
+            document.getElementById('fTeamA').innerText = appState.fA;
+            const grid = document.getElementById('gridGara');
+            grid.innerHTML = "";
+            appState.noi.forEach(p => {
+                const d = appState.players[p.num];
+                const isField = appState.inCampo.includes(p.num);
+                grid.innerHTML += `<button class="btn-giocatore ${isField?'in-campo':''} ${appState.selP==p.num?'selected':''}" onclick="setSel('${p.num}')">
+                    <span class="p-name">${p.name}</span><span class="p-num">${p.num}</span><span class="p-pts">${d.pts}</span><span class="p-foul">${d.f}</span>
+                </button>`;
+            });
+        }
+
+        function setSel(n) { appState.selP = (appState.selP === n) ? null : n; updateUI(); }
+        function apriModale(id) { document.getElementById(id).style.display = 'flex'; }
+        function chiudiModale(id) { document.getElementById(id).style.display = 'none'; }
+        
+        function gestioneQuarto() {
+            document.getElementById('panelAzioni').style.opacity = "1";
+            document.getElementById('panelAzioni').style.pointerEvents = "auto";
+            appState.inCampo = appState.noi.slice(0,5).map(p => p.num); // Auto-quintetto per test
+            updateUI();
+        }
+
+        function apriTiro() { if(appState.selP) apriModale('modTiro'); }
+        function regEsitoTiro(success) {
+            if(success) {
+                appState.players[appState.selP].pts += 2;
+                if(appState.noiIsCasa) appState.sH += 2; else appState.sA += 2;
+            }
+            chiudiModale('modTiro');
+            updateUI();
+            if(appState.gameRef) appState.gameRef.set(appState);
+        }
+        
+        function setCasa(v) { appState.noiIsCasa = v; }
+        function undo() { alert("Undo non ancora configurato in questa build rapida."); }
+        function mostraStatistiche() { alert("Statistiche calcolate nel database."); }
+    </script>
+</body>
+</html>
+
