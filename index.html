@@ -78,7 +78,7 @@
 
     <div id="view-home">
         <h1 style="text-align: center; color: var(--prim);">BASKET SCOUT PRO</h1>
-        <button class="btn-l bg-info full" onclick="nav('view-new')">NUOVA PARTITA</button><br><br>
+        <button class="btn-l bg-info full" onclick="startNewGame()">NUOVA PARTITA</button>
         <button class="btn-l bg-warn full" onclick="loadGamePrompt()">CARICA PARTITA</button><br><br>
         <button class="btn-l bg-sec full" onclick="nav('view-roster'); loadRosters();">GESTIONE ROSTER</button>
     </div>
@@ -912,11 +912,28 @@
             doc.save("Scout_"+g.id+".pdf");
         }
 
+        import { clearEvents } from "./core/eventStore.js";
+import { buildInitialState } from "./core/matchEngine.js";
+
+function startNewGame() {
+    // 1️⃣ mostra la schermata nuova
+    nav('view-new');
+
+    // 2️⃣ resetta il motore
+    clearEvents();
+    g = buildInitialState();
+
+    // 3️⃣ aggiorna la UI
+    updateUI();
+}
+
+
     </script>
         <script type="module" src="./core/eventStore.js"></script>
         <script type="module" src="./core/matchEngine.js"></script>
 </body>
 </html>
+
 
 
 
