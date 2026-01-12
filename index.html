@@ -898,10 +898,28 @@
             });
             doc.save("Scout_"+g.id+".pdf");
         }
+
+        // === TEST EVENT STORE (temporaneo) ===
+import { addEvent, undoLastEvent, getEvents } from "./core/eventStore.js";
+
+window.testAddEvent = function () {
+  addEvent({
+    type: "TEST_EVENT",
+    time: "10:00"
+  });
+  console.log("EVENTI:", getEvents());
+};
+
+window.testUndo = function () {
+  undoLastEvent();
+  console.log("EVENTI:", getEvents());
+};
+
     </script>
         <script type="module" src="./core/eventStore.js"></script>
         <script type="module" src="./core/matchEngine.js"></script>
 </body>
 </html>
+
 
 
