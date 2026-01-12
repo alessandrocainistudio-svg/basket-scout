@@ -732,10 +732,23 @@
             updateUI();
         }
 
-        function addOppPoint(val) {
-            if(g.home) g.sA += val; else g.sH += val;
-            addLog("PUNTI_AVV", val, "+"+val);
-            updateUI();
+        import { addEvent, getEvents } from "./core/eventStore.js";
+
+        function addOppPoint(points) {
+            // CREA evento
+            addEvent({
+            type: "SCORE_AWAY",
+            points: points,
+            time: g.clock // registra l’orario del cronometro
+        });
+
+    // Ricalcola lo stato corrente
+        const state = buildMatchState(); // da matchEngine.js
+        g.score.opp = state.score.away;
+
+        // Aggiorna UI
+        updateUI();
+        
         }
         
         function addTimeOut(team) {
@@ -904,6 +917,7 @@
         <script type="module" src="./core/matchEngine.js"></script>
 </body>
 </html>
+
 
 
 
