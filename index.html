@@ -526,37 +526,33 @@ const uid=()=> 'e'+Math.random().toString(16).slice(2)+Date.now().toString(16);
 function qs(name){ return new URLSearchParams(location.search).get(name); }
 const IS_VIEWER = qs('view') === '1';
 let CLOUD_GAME_ID = qs('game') || null;
-let FB_DB=null, FB_REF=null;
+let FB_DB = null;
+let FB_REF = null;
 
 function initFirebase(){
-  // ✅ Incolla qui la tua config Firebase (oppure definisci window.__FIREBASE_CONFIG__ prima di questo script)
   const firebaseConfig = window.__FIREBASE_CONFIG__ || {
-  apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
-  authDomain: "basket-reggello-scout.firebaseapp.com",
-  databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "basket-reggello-scout",
-  storageBucket: "basket-reggello-scout.firebasestorage.app",
-  messagingSenderId: "395815946220",
-  appId: "1:395815946220:web:68c00b4c7f2da1754722c9",
-  measurementId: "G-8DFL77TB65"
-};
-
-  // ✅ inizializza UNA VOLTA
-  if(!firebase.apps.length){
-    firebase.initializeApp(firebaseConfig);
-  }
-  FB_DB = firebase.database();
-}
+    apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
+    authDomain: "basket-reggello-scout.firebaseapp.com",
+    databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "basket-reggello-scout",
+    storageBucket: "basket-reggello-scout.firebasestorage.app",
+    messagingSenderId: "395815946220",
+    appId: "1:395815946220:web:68c00b4c7f2da1754722c9",
+    measurementId: "G-8DFL77TB65"
+  };
 
   try{
-    if(!firebase?.apps?.length) firebase.initializeApp(firebaseConfig);
+    if(!firebase.apps.length){
+      firebase.initializeApp(firebaseConfig);
+    }
     FB_DB = firebase.database();
     return true;
   }catch(e){
-    alert("Firebase non configurato o non disponibile. Incolla firebaseConfig nel codice.");
+    alert("Firebase non configurato o non disponibile.");
     return false;
   }
 }
+
 
 function connectToCloud(gameId){
   if(!initFirebase()) return;
@@ -2410,4 +2406,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
