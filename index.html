@@ -1,941 +1,2403 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="it">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Basket Scout Pro - FIX</title>
-    
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+<title>Basket Scout Pro - v7 (Undo/Eventi/Edit/SpecFouls/PDF/Save)</title>
 
-    <style>
-        /* STILI */
-        :root { --bg: #121212; --surf: #1e1e1e; --prim: #ffeb3b; --err: #dc3545; --succ: #28a745; --info: #007bff; --warn: #ff9800; --text: #fff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 10px; overflow-x:hidden; touch-action: manipulation; }
-        button { cursor: pointer; border: none; font-weight: bold; border-radius: 6px; text-transform: uppercase; }
-        input, select, textarea { background: #333; color: #fff; border: 1px solid #555; padding: 10px; width: 100%; box-sizing: border-box; margin: 5px 0; border-radius: 4px; }
-        .hidden { display: none !important; }
-        .row { display: flex; gap: 8px; margin-bottom: 8px; }
-        .full { width: 100%; }
-        .btn-l { padding: 15px; font-size: 14px; }
-        
-        .bg-prim { background: var(--prim); color: #000; }
-        .bg-sec { background: #444; color: #fff; }
-        .bg-succ { background: var(--succ); color: #fff; }
-        .bg-err { background: var(--err); color: #fff; }
-        .bg-info { background: var(--info); color: #fff; }
-        .bg-warn { background: var(--warn); color: #000; }
+<!-- XLSX (excel) -->
+<script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 
-        .scoreboard { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr; background: #000; padding: 10px; border: 1px solid #333; border-radius: 8px; text-align: center; margin-bottom: 10px; }
-        .score { font-size: 40px; margin: 0; color: var(--prim); }
-        .bonus { font-size: 10px; background: var(--warn); color: #000; padding: 2px 4px; border-radius: 4px; visibility: hidden; }
-        .bonus.active { visibility: visible; }
-        .to-dots { display: flex; justify-content: center; gap: 4px; margin-top: 5px; }
-        .dot { width: 8px; height: 8px; background: #333; border-radius: 50%; }
-        .dot.active { background: var(--err); }
+<!-- PDF libs (CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
-        .grid-p { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 10px; }
-        .p-card { background: var(--surf); border: 2px solid #444; padding: 10px 5px; border-radius: 8px; position: relative; height: 75px; color: #fff; }
-        .p-card.on-court { border-color: var(--succ); box-shadow: inset 0 0 5px var(--succ); }
-        .p-card.selected { background: var(--warn); color: #000; }
-        .p-card.out { opacity: 0.4; pointer-events: none; }
-        .p-num { font-size: 24px; display: block; text-align: center; }
-        .p-name { font-size: 10px; position: absolute; top: 5px; left: 5px; right: 5px; text-align: center; white-space: nowrap; overflow: hidden; }
-        .p-stat-pts { position: absolute; bottom: 5px; left: 5px; color: #7fff7f; font-size: 12px; font-weight: bold; }
-        .p-stat-f { position: absolute; bottom: 5px; right: 5px; background: var(--err); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
-        .p-icon { position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); font-size: 10px; color: cyan; font-weight: bold; }
 
-        .actions-grid { display: grid; gap: 8px; }
-        .act-row-2 { display: grid; grid-template-columns: 2fr 1fr; gap: 8px; }
-        .act-row-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; }
+<!-- Firebase (LIVE LINK / realtime) -->
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+<style>
+:root{
+  --bg:#121212;--card:#1a1a1a;--card2:#101010;--bd:#2a2a2a;
+  --mut:#bdbdbd;--mut2:#8d8d8d;
+  --acc:#ff9800;--g:#28a745;--r:#dc3545;--y:#ffeb3b;
+  --pad:12px;--gap:6px;
+}
+*{box-sizing:border-box}
+body{margin:0;padding:var(--pad);background:var(--bg);color:#fff;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.wrap{max-width:560px;margin:0 auto}
+.hidden{display:none!important}
+.flash-green{background:#1e3d24!important}.flash-red{background:#4d0000!important}.flash-blue{background:#002b36!important}
 
-        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.92); z-index: 999; justify-content: center; align-items: flex-start; overflow-y: auto; padding: 10px; box-sizing: border-box; }
-        .modal-content { background: var(--surf); width: 100%; max-width: 500px; padding: 15px; border-radius: 10px; border: 1px solid #444; margin-top: 20px; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; }
-        
-        #court-map { width: 300px; height: 260px; background: #d2a679; margin: 0 auto; position: relative; border: 2px solid #fff; border-radius: 4px; overflow: hidden; }
-        .c-rim { position: absolute; top: 35px; left: 150px; width: 12px; height: 12px; border: 2px solid #e65100; border-radius: 50%; transform: translate(-50%,-50%); }
-        .c-3pt { position: absolute; top: -80px; left: 20px; width: 260px; height: 240px; border: 2px solid #fff; border-radius: 0 0 130px 130px; pointer-events: none; }
-        .c-paint { position: absolute; top: 0; left: 110px; width: 80px; height: 120px; border: 2px solid #fff; pointer-events: none; }
-        .shot-mark { position: absolute; width: 10px; height: 10px; background: #fff; border-radius: 50%; transform: translate(-50%,-50%); border: 1px solid #000; }
+.scoreboard{display:grid;grid-template-columns:1fr .9fr 1fr;gap:10px;align-items:center;padding:12px;background:#000;border:2px solid #242424;border-radius:22px;margin-bottom:10px;text-align:center}
+.score-box h1{margin:0;font-size:44px;color:var(--y);line-height:1}
+.team-name{margin-top:6px;font-size:13px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;color:#b5b5b5}
+.meta-row{display:flex;justify-content:center;gap:8px;margin-top:6px;font-size:11px;color:#c8c8c8;font-weight:800}
+.meta-row .pill{background:#111;border:1px solid #2b2b2b;border-radius:999px;padding:4px 8px;display:flex;align-items:center;gap:6px}
+.meta-row b{color:var(--acc)}
+.techIcon{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:6px;background:#222;border:1px solid #333;color:var(--y);font-weight:1000;font-size:12px}
+#labelPeriodo{font-weight:1000;color:var(--acc);font-size:20px;letter-spacing:.4px}
+#syncStatus{font-size:10px;color:#7fff7f;margin-top:3px}
+#btnStato{width:100%;border:none;border-radius:14px;padding:10px;font-weight:1000;color:#fff;margin-top:8px}
+.bonus-on{display:none;margin-top:5px;font-size:11px;color:#ff4b4b;font-weight:1000}
+.to-container{display:flex;justify-content:center;gap:5px;margin-top:8px}
+.dot{width:12px;height:12px;border:1px solid #555;border-radius:50%;background:#333}
+.dot.filled{background:var(--acc);box-shadow:0 0 6px rgba(255,152,0,.8)}
+.btn-mini{margin-top:6px;font-size:10px;padding:7px 9px;border:none;border-radius:999px;background:#222;color:#fff;font-weight:1000}
 
-        @keyframes flashAnim { 0% { opacity: 0.8; } 100% { opacity: 0; } }
-        .flash-overlay { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 2000; opacity: 0; }
-        .flash-active { animation: flashAnim 0.3s ease-out; }
+.opp-points-bar{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:var(--gap);margin-bottom:10px;align-items:center}
+.opp-label{font-size:11px;color:#ff8f8f;font-weight:1000;text-align:center}
+.btn-opp{padding:12px;border-radius:14px;background:#331a1a;border:1px solid #663333;color:#ff8f8f;font-weight:1000}
 
-        .roster-row { display: flex; justify-content: space-between; align-items: center; background: #222; padding: 8px; margin-bottom: 5px; border-radius: 4px; }
-        .check-player { display: flex; align-items: center; background: #222; padding: 10px; border-bottom: 1px solid #333; }
-        .check-player input { width: auto; margin-right: 10px; }
-    </style>
+.grid-players{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap)}
+.player-card{
+  position:relative;padding:12px 8px 18px;background:#2a2a2a;border:2px solid #3a3a3a;border-radius:18px;
+  min-height:96px;text-align:center;font-weight:1000;color:#fff
+}
+.player-card.in{background:#1e3d24;border-color:var(--g)}
+.player-card.sel{background:var(--acc)!important;color:#111;border-color:#fff}
+.player-card.dis{opacity:.35;pointer-events:none}
+.pname{font-size:10px;font-weight:1000;color:#cfcfcf;text-transform:uppercase;letter-spacing:.3px;max-width:95%;margin:0 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-height:14px}
+.player-card.sel .pname{color:#111}
+.pnum{font-size:24px;line-height:1;margin-top:4px}
+.bpts{position:absolute;left:8px;bottom:7px;font-size:14px;color:#7fff7f;font-weight:1000}
+.bmid{position:absolute;left:50%;transform:translateX(-50%);bottom:7px;font-size:13px;font-weight:1000;color:var(--y)}
+.bf{position:absolute;right:8px;bottom:7px;font-size:13px;background:#ff4444;color:#fff;border-radius:999px;padding:2px 8px;font-weight:1000}
+
+#azioni{display:none;margin-top:10px}
+.row-2-1{display:grid;grid-template-columns:2fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}
+.row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--gap);margin-bottom:var(--gap)}
+.row-4{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);margin-bottom:var(--gap)}
+.row-1{display:grid;grid-template-columns:1fr;gap:var(--gap);margin-bottom:var(--gap)}
+.btnA{padding:14px 10px;border:none;border-radius:14px;font-weight:1000;font-size:13px;display:flex;align-items:center;justify-content:center;color:#111}
+.y{background:var(--y)}.gry{background:#e0e0e0}.red{background:#ff7f7f}.grn{background:#7fff7f}.blu{background:#add8e6}.lim{background:#98fb98}.org{background:#ffa07a}.dk{background:#333;color:#fff}.dl{background:#4caf50;color:#fff}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:1000;padding:14px;overflow:auto}
+.mcard{max-width:560px;margin:0 auto;background:var(--card);border:1px solid var(--bd);border-radius:22px;padding:16px}
+.mcard h3{margin:0 0 10px;font-weight:1000;letter-spacing:.3px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px}
+.topbar .closeTop{padding:10px 12px;border:none;border-radius:14px;background:#333;color:#fff;font-weight:1000}
+.pill{display:inline-block;font-size:11px;color:#cfcfcf;font-weight:900;padding:6px 10px;border-radius:999px;border:1px solid #2e2e2e;background:#0f0f0f;margin-bottom:10px}
+.btnW{width:100%;padding:14px 12px;border:none;border-radius:16px;font-weight:1000;margin-top:10px;font-size:14px}
+.btnW.active-in{background:var(--g)!important;color:#fff!important;border:2px solid #fff}
+.btnW.active-out{background:var(--r)!important;color:#fff!important;border:2px solid #fff}
+input,textarea,select{width:100%;border-radius:14px;border:1px solid #3a3a3a;background:#0f0f0f;color:#fff;padding:10px 12px;font-weight:800}
+textarea{min-height:110px;resize:vertical}
+
+.court{width:310px;height:240px;background:#d2a679;border:2px solid #fff;border-radius:12px;position:relative;overflow:hidden;margin:0 auto}
+.arc{position:absolute;top:-110px;left:20px;right:20px;height:270px;border:2px solid #fff;border-radius:0 0 160px 160px;pointer-events:none}
+.paint{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100px;height:120px;border:2px solid #fff;pointer-events:none}
+.mark{position:absolute;width:18px;height:18px;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:5}
+canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
+
+.selector{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 12px}
+.selbtn{
+  padding:10px;border-radius:14px;border:1px solid #2e2e2e;background:#0f0f0f;color:#fff;
+  font-weight:1000;font-size:12px;text-align:center;min-height:44px;display:flex;flex-direction:column;justify-content:center
+}
+.selbtn.act{background:var(--acc);color:#111;border-color:#fff}
+.selbtn small{font-size:10px;font-weight:900;opacity:.85}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+@media (max-width:420px){.grid4{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--card2);border:1px solid #2a2a2a;border-radius:18px;padding:12px;text-align:center}
+.kpi .t{font-size:11px;color:#bdbdbd;font-weight:900;letter-spacing:.2px;text-align:center}
+.kpi .v{margin-top:6px;font-size:18px;font-weight:1000;text-align:center}
+.kpi .s{margin-top:6px;font-size:12px;color:#c8c8c8;font-weight:900;text-align:center}
+.kpiY .v{color:var(--y)}
+.hr{height:1px;background:#2a2a2a;margin:10px 0}
+
+.ev-item{background:#0f0f0f;border:1px solid #2a2a2a;border-radius:16px;padding:12px;margin-top:10px}
+.ev-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.ev-title{font-weight:1000}
+.ev-sub{font-size:11px;color:#cfcfcf;font-weight:900;margin-top:4px;line-height:1.25}
+.ev-actions{display:flex;gap:8px}
+.ev-actions button{padding:8px 10px;border-radius:12px;border:none;font-weight:1000}
+.ev-actions .b1{background:#add8e6;color:#111}
+.ev-actions .b2{background:#ff7f7f;color:#111}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tab{flex:1;padding:10px;border-radius:14px;border:1px solid #2e2e2e;background:#0f0f0f;color:#fff;font-weight:1000}
+.tab.act{background:var(--acc);color:#111;border-color:#fff}
+.filterRow{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px}
+.fchip{padding:8px 10px;border-radius:999px;border:1px solid #2e2e2e;background:#0f0f0f;color:#fff;font-weight:1000;font-size:12px}
+.fchip.act{background:var(--acc);color:#111;border-color:#fff}
+.muted{color:var(--mut)}.muted2{color:var(--mut2)}
+
+.endActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.endActions .btnW{margin-top:0}
+</style>
 </head>
 
 <body>
+<div class="wrap">
+  <div class="scoreboard">
+    <div class="score-box">
+      <h1 id="scoreHome">0</h1><div class="team-name" id="nameH">CASA</div>
+      <div class="meta-row">
+        <div class="pill">F.SQ <b id="sfHome">0</b> <span class="techIcon">T</span><b id="tHome">0</b></div>
+      </div>
+      <div id="bHome" class="bonus-on">BONUS</div>
+      <div id="dotsHome" class="to-container"></div>
+      <button class="btn-mini" onclick="addEventTimeout('Home')">TIMEOUT</button>
+    </div>
+    <div>
+      <div id="labelPeriodo">Q1</div>
+      <div id="syncStatus">LOCALE</div>
+      <button id="btnStato" onclick="togglePeriodo()">INIZIA Q1</button>
+    </div>
+    <div class="score-box">
+      <h1 id="scoreAway">0</h1><div class="team-name" id="nameA">TRASFERTA</div>
+      <div class="meta-row">
+        <div class="pill">F.SQ <b id="sfAway">0</b> <span class="techIcon">T</span><b id="tAway">0</b></div>
+      </div>
+      <div id="bAway" class="bonus-on">BONUS</div>
+      <div id="dotsAway" class="to-container"></div>
+      <button class="btn-mini" onclick="addEventTimeout('Away')">TIMEOUT</button>
+    </div>
+  </div>
 
-    <div id="flash" class="flash-overlay"></div>
+  <div class="opp-points-bar">
+    <div class="opp-label">PUNTI<br>AVVERSARI</div>
+    <button class="btn-opp" onclick="addEventOppPoint(1)">+1</button>
+    <button class="btn-opp" onclick="addEventOppPoint(2)">+2</button>
+    <button class="btn-opp" onclick="addEventOppPoint(3)">+3</button>
+  </div>
 
-    <div id="view-home">
-        <h1 style="text-align: center; color: var(--prim);">BASKET SCOUT PRO</h1>
-        <button class="btn-l bg-info full" onclick="startNewGame()">NUOVA PARTITA</button>
-        <button class="btn-l bg-warn full" onclick="loadGamePrompt()">CARICA PARTITA</button><br><br>
-        <button class="btn-l bg-sec full" onclick="nav('view-roster'); loadRosters();">GESTIONE ROSTER</button>
+  <div class="grid-players" id="rosterGrid"></div>
+
+  <div id="azioni">
+    <div class="row-2-1">
+      <button class="btnA y" onclick="if(S.selP) openModal('modalTiro')">🏀 TIRO</button>
+      <button class="btnA gry" onclick="if(S.selP) openFT()">🗑️ LIBERI</button>
+    </div>
+    <div class="row-2">
+      <button class="btnA red" onclick="addEventFoulMade()">🛑 FALLO FATTO</button>
+      <button class="btnA grn" onclick="if(S.selP) openFoulSuffered()">🤝 FALLO SUBITO</button>
+    </div>
+    <div class="row-4">
+      <button class="btnA blu" onclick="addEventQuick('reb_def')">⬇️ R.DIF</button>
+      <button class="btnA blu" onclick="addEventQuick('reb_off')">⬆️ R.OFF</button>
+      <button class="btnA org" onclick="addEventQuick('turnover')">⚠️ PERSA</button>
+      <button class="btnA lim" onclick="addEventQuick('steal')">🛡️ RECUPERO</button>
     </div>
 
-    <div id="view-roster" class="hidden">
-        <div class="modal-header"><h3>GESTIONE SQUADRE</h3><button onclick="nav('view-home')">X</button></div>
-        <div class="row">
-            <input type="text" id="new-team-name" placeholder="Nome Squadra">
-            <button class="bg-prim" style="width: 80px;" onclick="createTeam()">CREA</button>
-        </div>
-        <div id="roster-list"></div>
+    <div class="row-2">
+      <button class="btnA gry" onclick="openSub()">🔄 CAMBIO</button>
+      <button class="btnA gry" onclick="openSpecialFoul()">🚨 TEC/ANT/ESP</button>
     </div>
 
-    <div id="mod-edit-roster" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h3 id="edit-title">MODIFICA</h3><button onclick="closeModal('mod-edit-roster')">X</button></div>
-            <div id="edit-players-container" style="max-height: 300px; overflow-y: scroll;"></div>
-            <button class="btn-l bg-info full" style="margin-top:10px;" onclick="addEditRow()">+ AGGIUNGI GIOCATORE</button>
-            <button class="btn-l bg-succ full" style="margin-top:10px;" onclick="saveRosterChanges()">SALVA</button>
-        </div>
+    <div class="row-2">
+      <button class="btnA gry" onclick="openModal('modalFalliCheck')">🧾 CHECK FALLI</button>
+      <button class="btnA blu" onclick="openStats()">📊 STAT LIVE</button>
     </div>
 
-    <div id="view-new" class="hidden">
-        <div class="modal-header"><h3>SETUP PARTITA</h3><button onclick="nav('view-home')">X</button></div>
-        <input type="text" id="setup-code" placeholder="CODICE PARTITA (es. Gara1)">
-        
-        <label>MIA SQUADRA:</label>
-        <select id="setup-roster-sel" onchange="checkManualInput(this.value)"><option value="">Seleziona...</option><option value="MANUAL">MANUALE (Inserisci dopo)</option></select>
-        
-        <label>AVVERSARI:</label>
-        <input type="text" id="setup-opp-name" placeholder="Nome Avversario">
-        <div class="row">
-            <button id="btn-home" class="full bg-sec" onclick="setHome(true)">CASA</button>
-            <button id="btn-away" class="full bg-sec" onclick="setHome(false)">FUORI</button>
-        </div>
-
-        <label>TEMPO:</label>
-        <div class="row">
-            <select id="setup-mins"><option value="10">10 Min/Q</option><option value="8">8 Min/Q</option></select>
-            <select id="setup-ot"><option value="5">5 Min OT</option></select>
-        </div>
-
-        <button class="btn-l bg-succ full" style="margin-top: 15px;" onclick="goToConvocazioni()">AVANTI ></button>
+    <div class="row-4">
+      <button class="btnA gry" onclick="undoLast()">↩️ UNDO</button>
+      <button class="btnA gry" onclick="openEvents()">🧾 EVENTI</button>
+      <button class="btnA gry" onclick="copyLiveLink()">📡 LIVE LINK</button>
+      <button class="btnA dk" onclick="openModal('modalSetup')">⚙️ SETUP</button>
     </div>
 
-    <div id="view-conv" class="hidden">
-        <h3>CONVOCAZIONI</h3>
-        <div class="row">
-            <div class="full">
-                <h4>NOI (Seleziona)</h4>
-                <div id="conv-list-noi" style="height: 200px; overflow-y: auto; background: #222; padding: 5px;"></div>
-            </div>
-            <div class="full">
-                <h4>LORO (Numeri)</h4>
-                <textarea id="conv-list-loro" placeholder="Es: 4 5 10 23 (spaziati)" style="height: 200px;"></textarea>
-            </div>
-        </div>
-        <button class="btn-l bg-prim full" onclick="startGame()">VAI ALLA PARTITA 🏀</button>
+    <div class="row-2">
+      <button class="btnA dk" onclick="exportGameJSON()">💾 ESPORTA PARTITA</button>
+      <button class="btnA dk" onclick="document.getElementById('importFile').click()">📂 IMPORTA</button>
+      <input id="importFile" type="file" accept="application/json" class="hidden"/>
     </div>
-
-    <div id="view-game" class="hidden">
-        <div class="scoreboard">
-            <div>
-                <small id="l-home">HOME</small>
-                <h1 class="score" id="s-home">0</h1>
-                <div style="color:red">FALLI: <span id="f-home">0</span></div>
-                <div id="b-home" class="bonus">BONUS</div>
-                <div class="to-dots" id="to-home"></div>
-                <button style="font-size:10px; margin-top:2px;" onclick="addTimeOut('H')">TIMEOUT</button>
-            </div>
-            <div>
-                <div style="color:var(--prim); font-weight:bold; font-size:22px;" id="q-disp">Q1</div>
-                <div style="font-size:10px; color:#666;" id="code-disp"></div>
-                <button id="btn-q" class="bg-succ" style="padding: 5px 15px; margin-top:5px;" onclick="handleQuarter()">INIZIO Q1</button>
-            </div>
-            <div>
-                <small id="l-away">AWAY</small>
-                <h1 class="score" id="s-away">0</h1>
-                <div style="color:red">FALLI: <span id="f-away">0</span></div>
-                <div id="b-away" class="bonus">BONUS</div>
-                <div class="to-dots" id="to-away"></div>
-                <button style="font-size:10px; margin-top:2px;" onclick="addTimeOut('A')">TIMEOUT</button>
-            </div>
-        </div>
-
-        <div class="act-row-4" style="margin-bottom:10px;">
-            <button class="bg-sec" style="color:#ff9999" onclick="addOppPoint(1)">+1 AVV</button>
-            <button class="bg-sec" style="color:#ff9999" onclick="addOppPoint(2)">+2 AVV</button>
-            <button class="bg-sec" style="color:#ff9999" onclick="addOppPoint(3)">+3 AVV</button>
-            <button class="bg-info" onclick="openFalliMod()">SIT. FALLI</button>
-        </div>
-
-        <div id="grid-players" class="grid-p"></div>
-
-        <div id="actions-panel" style="opacity: 0.3; pointer-events: none;">
-            <div class="act-row-2">
-                <button class="btn-l bg-prim" onclick="openShotMap()">🏀 TIRO</button>
-                <button class="btn-l bg-sec" onclick="openFT()">LIBERI</button>
-            </div>
-            <div class="row">
-                <button class="btn-l bg-err full" onclick="addFoul(true)">🛑 FALLO FATTO</button>
-                <button class="btn-l bg-succ full" onclick="openFoulSub()">🤝 SUBITO</button>
-            </div>
-            <div class="act-row-4">
-                <button class="bg-info" onclick="addStat('RD')">R.DIF</button>
-                <button class="bg-info" onclick="addStat('RO')">R.OFF</button>
-                <button class="bg-err" onclick="addStat('PP')">PERSA</button>
-                <button class="bg-succ" onclick="addStat('PR')">RECUP</button>
-            </div>
-            <div class="row" style="margin-top:8px;">
-                <button class="btn-l bg-sec full" onclick="openSub()">🔄 CAMBIO</button>
-            </div>
-            <div class="row">
-                <button class="bg-warn full" style="padding: 8px;" onclick="openSpecials()">⚠️ FALLI SPECIALI</button>
-            </div>
-        </div>
-
-        <div class="act-row-4" style="margin-top: 15px;">
-            <button class="bg-sec" onclick="undoLast()">↩️ UNDO</button>
-            <button class="bg-sec" onclick="openEvents()">📜 EVENTI</button>
-            <button class="bg-sec" onclick="calcStats(); openModal('mod-stats');">📊 STATS</button>
-        </div>
+    <div class="row-1">
+      <button class="btnA dl" onclick="exportExcel()">📥 SCARICA EXCEL</button>
     </div>
+  </div>
+</div>
 
-    <div id="mod-shot" class="modal">
-        <div class="modal-content">
-            <h3 id="shot-title">TIRO</h3>
-            <div id="court-map" onclick="mapClick(event)">
-                <div class="c-rim"></div><div class="c-3pt"></div><div class="c-paint"></div>
-            </div>
-            <div class="row" style="margin-top:10px;">
-                <button class="btn-l bg-succ full" onclick="confirmShot(true)">SEGNATO</button>
-                <button class="btn-l bg-err full" onclick="confirmShot(false)">SBAGLIATO</button>
-            </div>
-            <button class="full bg-sec" style="padding:10px;" onclick="closeModal('mod-shot')">ANNULLA</button>
-        </div>
+
+<!-- STARTUP -->
+<div id="modalStartup" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">PARTITA TROVATA 💾</h3>
+    <button class="closeTop" onclick="startNewGame()">NUOVA</button>
+  </div>
+  <div class="pill">Ho trovato un salvataggio locale. Vuoi ripristinarlo?</div>
+  <button class="btnW" style="background:var(--g);color:#fff" onclick="restoreAutosave()">RIPRISTINA</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="startNewGame()">NUOVA PARTITA</button>
+  <div class="muted2" style="font-size:11px;margin-top:10px;line-height:1.25">
+    Suggerimento: usa <b>📡 LIVE LINK</b> per condividere statistiche in tempo reale.
+  </div>
+</div></div>
+
+
+<!-- SETUP -->
+<div id="modalSetup" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">SETUP PARTITA</h3>
+    <button class="closeTop" onclick="closeModal('modalSetup')">CHIUDI</button>
+  </div>
+  <div class="pill">Locale • Roster • Durate periodi</div>
+  <div class="grid2">
+    <div><div class="pill">Durata quarto</div>
+      <select id="quarterLenSel"><option value="10" selected>10 minuti</option><option value="12">12 minuti</option><option value="8">8 minuti</option></select>
     </div>
-
-    <div id="mod-sub" class="modal">
-        <div class="modal-content">
-            <h3>CAMBIO</h3>
-            <div style="text-align: center; margin-bottom: 10px;">
-                <label>Tempo Residuo (MSS, es: 430 = 4:30)</label>
-                <input type="number" id="sub-time" placeholder="MSS" style="font-size:20px; text-align:center; width: 100px;">
-            </div>
-            <div style="border-bottom: 2px solid #555; padding-bottom: 5px; margin-bottom: 5px;">IN CAMPO (Chi esce)</div>
-            <div id="sub-list-in" class="grid-p"></div>
-            <div style="border-bottom: 2px solid #555; padding-bottom: 5px; margin-bottom: 5px; margin-top:15px;">PANCHINA (Chi entra)</div>
-            <div id="sub-list-out" class="grid-p"></div>
-            <button id="btn-conf-sub" class="btn-l bg-succ full" disabled onclick="execSub()">CONFERMA</button>
-            <button class="full bg-sec" style="margin-top:5px; padding:10px;" onclick="closeModal('mod-sub')">CHIUDI</button>
-        </div>
+    <div><div class="pill">Durata OT</div>
+      <select id="otLenSel"><option value="5" selected>5 minuti</option><option value="3">3 minuti</option></select>
     </div>
-
-    <div id="mod-stats" class="modal">
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header"><h3>STATISTICHE</h3><button onclick="closeModal('mod-stats')">X</button></div>
-            <div id="stats-body" style="overflow-x: auto;"></div>
-            <div class="row" style="margin-top:15px;">
-                <button class="btn-l bg-succ full" onclick="exportXLSX()">EXCEL</button>
-                <button class="btn-l bg-err full" onclick="exportPDF()">PDF</button>
-            </div>
-        </div>
+  </div>
+  <div class="grid2" style="margin-top:10px">
+    <div><div class="pill">Sono CASA / TRASFERTA</div>
+      <select id="noiSel"><option value="Home" selected>CASA</option><option value="Away">TRASFERTA</option></select>
     </div>
+    <div><div class="pill">Nomi squadre</div><input id="teamNames" type="text" placeholder="CASA;TRASFERTA"/></div>
+  </div>
+  <div style="margin-top:10px"><div class="pill">Mia squadra: numero,nome (uno per riga)</div>
+    <textarea id="myTeamInput" placeholder="4,MARIO&#10;7,LUCA&#10;10,PAOLO"></textarea>
+  </div>
+  <div style="margin-top:10px"><div class="pill">Avversari: solo numero (uno per riga)</div>
+    <textarea id="oppTeamInput" placeholder="3&#10;8&#10;12&#10;20&#10;25"></textarea>
+  </div>
 
-    <div id="mod-spec" class="modal">
-        <div class="modal-content">
-            <h3>FALLI SPECIALI</h3>
-            <div class="act-row-4">
-                <button class="btn-l" id="sp-T" onclick="selSpType('T')">TEC</button>
-                <button class="btn-l" id="sp-U" onclick="selSpType('U')">ANT</button>
-                <button class="btn-l" id="sp-D" onclick="selSpType('D')">ESP</button>
-            </div>
-            <hr>
-            <h4>ASSEGNA A:</h4>
-            <div id="spec-players" class="grid-p"></div>
-            <button class="btn-l bg-sec full" style="margin-top:5px;" onclick="assignSpec('BENCH')">PANCHINA</button>
-            <button class="full bg-sec" style="margin-top:10px; padding:10px;" onclick="closeModal('mod-spec')">CHIUDI</button>
-        </div>
+  <div style="margin-top:10px">
+    <div class="pill">📡 LIVE (Cloud) • condividi in tempo reale</div>
+    <div class="grid2">
+      <div><input id="cloudIdInput" type="text" placeholder="ID partita (es. U15_vs_ABC_2026-01-14)"></div>
+      <div><button class="btnW" style="background:#e0e0e0;color:#111" onclick="connectCloudFromSetup()">CONNETTI</button></div>
     </div>
-
-    <div id="mod-starters" class="modal">
-        <div class="modal-content">
-            <h3>QUINTETTO BASE</h3>
-            <div id="list-starters" class="grid-p"></div>
-            <button id="btn-conf-start" class="btn-l bg-succ full" disabled onclick="confirmStarters()">CONFERMA</button>
-        </div>
+    <div class="muted2" style="font-size:11px;margin-top:8px;line-height:1.25">
+      Dopo la connessione comparirà il tasto <b>📡 LIVE LINK</b> per copiare il link viewer.
     </div>
-
-    <div id="mod-events" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h3>LOG EVENTI</h3><button onclick="closeModal('mod-events')">X</button></div>
-            <div id="events-list" style="max-height: 300px; overflow-y: scroll;"></div>
-        </div>
-    </div>
-
-    <div id="mod-ft" class="modal">
-        <div class="modal-content">
-            <h3>TIRI LIBERI</h3>
-            <div id="ft-seq" style="font-size:30px; text-align:center; min-height:40px; margin-bottom:10px;"></div>
-            <div class="row">
-                <button class="btn-l bg-succ full" onclick="regFT(true)">REALIZZATO</button>
-                <button class="btn-l bg-err full" onclick="regFT(false)">SBAGLIATO</button>
-            </div>
-            <button class="full bg-sec" style="margin-top:10px; padding:10px;" onclick="closeModal('mod-ft')">FINE</button>
-        </div>
-    </div>
-
-    <div id="mod-foul-sit" class="modal">
-        <div class="modal-content">
-            <div class="modal-header"><h3>SITUAZIONE FALLI</h3><button onclick="closeModal('mod-foul-sit')">X</button></div>
-            <div class="row">
-                <div class="full" id="fs-noi"></div>
-                <div class="full" id="fs-loro"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="mod-foul-sub" class="modal">
-        <div class="modal-content">
-            <h3>FALLO SUBITO DA:</h3>
-            <div id="fs-opp-list" style="display:grid; grid-template-columns: repeat(4, 1fr); gap:5px;"></div>
-            <hr>
-            <div class="row">
-                <button class="btn-l bg-info full" onclick="closeModal('mod-foul-sub')">RIMESSA</button>
-                <button class="btn-l bg-succ full" onclick="closeModal('mod-foul-sub'); openFT();">TIRI LIBERI</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // --- 1. CONFIGURAZIONE E INIT ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
-            authDomain: "basket-reggello-scout.firebaseapp.com",
-            databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "basket-reggello-scout",
-            storageBucket: "basket-reggello-scout.firebasestorage.app",
-            messagingSenderId: "395815946220",
-            appId: "1:395815946220:web:68c00b4c7f2da1754722c9"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-
-        let activeGameRef = null; // Riferimento al DB
-        let g = {
-            id: null, home: true, q: 1, minQ: 10, minOT: 5,
-            sH: 0, sA: 0, fH: 0, fA: 0, tH: 0, tA: 0,
-            players: {}, opp: [], events: [], onCourt: [], sel: null,
-            rosters: {}, specType: null
-        };
-
-        // --- SALVATAGGIO SICURO ---
-        function saveGame() {
-            if(!activeGameRef) return;
-            // Clona g senza riferimenti circolari
-            const data = JSON.parse(JSON.stringify(g)); 
-            delete data.rosters; // Non serve salvare i roster nella partita
-            activeGameRef.set(data);
-        }
-
-        // --- 2. NAVIGAZIONE ---
-        function nav(id) {
-            document.querySelectorAll('body > div').forEach(d => {
-                if(d.id !== 'flash' && !d.classList.contains('modal')) d.classList.add('hidden');
-            });
-            document.getElementById(id).classList.remove('hidden');
-        }
-        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
-        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
-
-        // --- 3. ROSTER MANAGER ---
-        function loadRosters() {
-            db.ref('rosters').on('value', snap => {
-                g.rosters = snap.val() || {};
-                renderRosterList();
-                const sel = document.getElementById('setup-roster-sel');
-                sel.innerHTML = '<option value="">Seleziona...</option><option value="MANUAL">MANUALE</option>';
-                Object.keys(g.rosters).forEach(k => {
-                    sel.innerHTML += `<option value="${k}">${k}</option>`;
-                });
-            });
-        }
-
-        function createTeam() {
-            const name = document.getElementById('new-team-name').value.trim();
-            if(!name) return;
-            db.ref('rosters/'+name).set({ created: Date.now(), players: [] });
-            document.getElementById('new-team-name').value = "";
-        }
-
-        function renderRosterList() {
-            const div = document.getElementById('roster-list');
-            div.innerHTML = "";
-            Object.keys(g.rosters).forEach(k => {
-                div.innerHTML += `
-                <div class="roster-row">
-                    <span><b>${k}</b> (${(g.rosters[k].players||[]).length} gioc.)</span>
-                    <div>
-                        <button class="bg-info" style="padding:5px;" onclick="openEditRoster('${k}')">EDIT</button>
-                        <button class="bg-err" style="padding:5px;" onclick="delTeam('${k}')">DEL</button>
-                    </div>
-                </div>`;
-            });
-        }
-
-        let editTeamName = null;
-        function openEditRoster(name) {
-            editTeamName = name;
-            document.getElementById('edit-title').innerText = "EDIT: " + name;
-            const pl = g.rosters[name].players || [];
-            const cont = document.getElementById('edit-players-container');
-            cont.innerHTML = "";
-            pl.forEach(p => addEditRow(p.n, p.name));
-            openModal('mod-edit-roster');
-        }
-
-        function addEditRow(n="", name="") {
-            const div = document.createElement('div');
-            div.className = "row";
-            div.innerHTML = `
-                <input type="number" class="ed-n" placeholder="N" value="${n}" style="width:60px;">
-                <input type="text" class="ed-name" placeholder="Nome" value="${name}">
-                <button class="bg-err" onclick="this.parentElement.remove()">X</button>
-            `;
-            document.getElementById('edit-players-container').appendChild(div);
-        }
-
-        function saveRosterChanges() {
-            const rows = document.getElementById('edit-players-container').children;
-            const arr = [];
-            for(let r of rows) {
-                const n = r.querySelector('.ed-n').value;
-                const name = r.querySelector('.ed-name').value;
-                if(n) arr.push({n, name});
-            }
-            db.ref('rosters/'+editTeamName+'/players').set(arr);
-            closeModal('mod-edit-roster');
-        }
-
-        function delTeam(n) { if(confirm("Eliminare "+n+"?")) db.ref('rosters/'+n).remove(); }
-
-        // --- 4. SETUP PARTITA ---
-        function setHome(isHome) {
-            g.home = isHome;
-            document.getElementById('btn-home').style.background = isHome ? 'var(--succ)' : '#444';
-            document.getElementById('btn-away').style.background = !isHome ? 'var(--succ)' : '#444';
-        }
-
-        function checkManualInput(val) {}
-
-        function goToConvocazioni() {
-            g.id = document.getElementById('setup-code').value.trim();
-            if(!g.id) return alert("Codice mancante");
-            
-            const rName = document.getElementById('setup-roster-sel').value;
-            const listNoi = document.getElementById('conv-list-noi');
-            listNoi.innerHTML = "";
-
-            if(rName && rName !== "MANUAL") {
-                const pl = g.rosters[rName].players || [];
-                pl.forEach(p => {
-                    listNoi.innerHTML += `
-                    <div class="check-player">
-                        <input type="checkbox" value="${p.n}" data-name="${p.name}">
-                        <span><b>#${p.n}</b> - ${p.name}</span>
-                    </div>`;
-                });
-            } else {
-                for(let i=0; i<12; i++) {
-                    listNoi.innerHTML += `
-                    <div class="check-player">
-                        <input type="checkbox" checked value="" class="man-chk">
-                        <input type="number" placeholder="#" class="man-n" style="width:50px; margin:0 5px;">
-                        <input type="text" placeholder="Nome" class="man-name">
-                    </div>`;
-                }
-            }
-            nav('view-conv');
-        }
-
-        function startGame() {
-            try {
-                // Init Players Noi
-                g.players = {};
-                const rName = document.getElementById('setup-roster-sel').value;
-                let count = 0;
-
-                if(rName && rName !== "MANUAL") {
-                    document.querySelectorAll('#conv-list-noi input[type="checkbox"]:checked').forEach(c => {
-                        const n = c.value;
-                        const name = c.dataset.name;
-                        initPlayer(n, name);
-                        count++;
-                    });
-                } else {
-                    document.querySelectorAll('#conv-list-noi .check-player').forEach(d => {
-                        if(d.querySelector('.man-chk').checked) {
-                            const n = d.querySelector('.man-n').value;
-                            const name = d.querySelector('.man-name').value || "Giocatore";
-                            if(n) { initPlayer(n, name); count++; }
-                        }
-                    });
-                }
-
-                if(count === 0 && !confirm("Nessun giocatore selezionato. Continuare?")) return;
-
-                // Init Opponents
-                g.opp = [];
-                const txt = document.getElementById('conv-list-loro').value;
-                txt.split(/[\s,]+/).forEach(n => {
-                    if(n) g.opp.push({n: n, f: 0});
-                });
-
-                g.minQ = parseInt(document.getElementById('setup-mins').value);
-                g.minOT = parseInt(document.getElementById('setup-ot').value);
-                
-                const oppName = document.getElementById('setup-opp-name').value || "OSPITI";
-                document.getElementById('l-home').innerText = g.home ? "NOI" : oppName;
-                document.getElementById('l-away').innerText = !g.home ? "NOI" : oppName;
-                document.getElementById('code-disp').innerText = g.id;
-
-                // DB Connect & Save
-                activeGameRef = db.ref('games/' + g.id);
-                saveGame(); // Salva senza rompere il database
-
-                nav('view-game');
-                updateUI();
-            } catch(e) {
-                alert("Errore avvio: " + e.message);
-                console.error(e);
-            }
-        }
-
-        function initPlayer(n, name) {
-            g.players[n] = { n, name, pts:0, f:0, t:0, u:0, d:0, min:0, lastIn: 0, shots:[] };
-        }
-
-        function loadGamePrompt() {
-            const id = prompt("Codice Partita:");
-            if(!id) return;
-            db.ref('games/'+id).once('value', s => {
-                if(s.exists()) {
-                    g = s.val();
-                    activeGameRef = db.ref('games/'+id);
-                    nav('view-game');
-                    updateUI();
-                } else alert("Non trovata");
-            });
-        }
-
-        // --- 5. LOGICA PARTITA ---
-        
-        function updateUI() {
-            document.getElementById('s-home').innerText = g.sH;
-            document.getElementById('s-away').innerText = g.sA;
-            document.getElementById('f-home').innerText = g.fH;
-            document.getElementById('f-away').innerText = g.fA;
-            document.getElementById('b-home').classList.toggle('active', g.fH >= 5);
-            document.getElementById('b-away').classList.toggle('active', g.fA >= 5);
-            document.getElementById('q-disp').innerText = "Q" + g.q;
-            
-            let dotH = ""; for(let i=0;i<g.tH;i++) dotH += '<div class="dot active"></div>';
-            document.getElementById('to-home').innerHTML = dotH;
-            let dotA = ""; for(let i=0;i<g.tA;i++) dotA += '<div class="dot active"></div>';
-            document.getElementById('to-away').innerHTML = dotA;
-
-            const div = document.getElementById('grid-players');
-            div.innerHTML = "";
-            Object.values(g.players).sort((a,b)=>parseInt(a.n)-parseInt(b.n)).forEach(p => {
-                const onCourt = g.onCourt.includes(p.n);
-                const isSel = g.sel === p.n;
-                const isOut = (p.f >= 5 || p.d > 0 || (p.t+p.u >= 2));
-                const specs = (p.t?"T"+p.t:"") + (p.u?"U"+p.u:"") + (p.d?"D":"");
-                
-                div.innerHTML += `
-                <div class="p-card ${onCourt?'on-court':''} ${isSel?'selected':''} ${isOut?'out':''}" onclick="selP('${p.n}')">
-                    <span class="p-name">${p.name}</span>
-                    <span class="p-num">${p.n}</span>
-                    <span class="p-stat-pts">${p.pts}</span>
-                    <span class="p-stat-f">${p.f}</span>
-                    <span class="p-icon">${specs}</span>
-                </div>`;
-            });
-
-            saveGame();
-        }
-
-        function selP(n) {
-            if(!g.onCourt.includes(n)) return; 
-            g.sel = (g.sel === n) ? null : n;
-            updateUI();
-        }
-
-        function flash(c) {
-            const f = document.getElementById('flash');
-            f.style.backgroundColor = c === 'red' ? 'rgba(255,0,0,0.3)' : (c==='green'?'rgba(0,255,0,0.3)':'rgba(0,0,255,0.3)');
-            f.classList.remove('flash-active');
-            void f.offsetWidth;
-            f.classList.add('flash-active');
-        }
-
-        function handleQuarter() {
-            const btn = document.getElementById('btn-q');
-            if(btn.innerText.includes("INIZIO")) {
-                const lst = document.getElementById('list-starters');
-                lst.innerHTML = "";
-                tempStart = [];
-                Object.values(g.players).forEach(p => {
-                    if(!(p.f>=5 || p.d>0 || p.t+p.u>=2)) {
-                        lst.innerHTML += `<div class="p-card" id="st-${p.n}" onclick="togStart('${p.n}')"><span class="p-num">${p.n}</span><span class="p-name">${p.name}</span></div>`;
-                    }
-                });
-                document.getElementById('btn-conf-start').disabled = true;
-                openModal('mod-starters');
-            } else {
-                if(!confirm("Terminare il Quarto?")) return;
-                const dur = (g.q > 4) ? g.minOT * 60 : g.minQ * 60;
-                g.onCourt.forEach(n => {
-                    const p = g.players[n];
-                    p.min += (p.lastIn - 0); 
-                });
-                
-                g.fH = 0; g.fA = 0;
-                if(g.q === 2) { g.tH = 0; g.tA = 0; }
-                
-                g.q++;
-                g.onCourt = []; 
-                document.getElementById('btn-q').innerText = "INIZIO Q" + g.q;
-                document.getElementById('btn-q').className = "bg-succ";
-                document.getElementById('actions-panel').style.opacity = "0.3";
-                document.getElementById('actions-panel').style.pointerEvents = "none";
-                updateUI();
-            }
-        }
-
-        let tempStart = [];
-        function togStart(n) {
-            const div = document.getElementById('st-'+n);
-            if(tempStart.includes(n)) {
-                tempStart = tempStart.filter(x => x !== n);
-                div.classList.remove('selected');
-            } else if(tempStart.length < 5) {
-                tempStart.push(n);
-                div.classList.add('selected');
-            }
-            document.getElementById('btn-conf-start').disabled = tempStart.length !== 5;
-        }
-
-        function confirmStarters() {
-            g.onCourt = [...tempStart];
-            const dur = (g.q > 4) ? g.minOT * 60 : g.minQ * 60;
-            g.onCourt.forEach(n => g.players[n].lastIn = dur);
-            
-            document.getElementById('btn-q').innerText = "FINE Q" + g.q;
-            document.getElementById('btn-q').className = "bg-err";
-            document.getElementById('actions-panel').style.opacity = "1";
-            document.getElementById('actions-panel').style.pointerEvents = "auto";
-            closeModal('mod-starters');
-            updateUI();
-        }
-
-        // --- AZIONI ---
-        function addLog(type, val, desc) {
-            g.events.push({
-                id: Date.now(), q: g.q, p: g.sel, type, val, desc, 
-                score: {h: g.sH, a: g.sA}
-            });
-        }
-
-        function openShotMap() { if(!g.sel) return; openModal('mod-shot'); }
-        let lastShot = {x:0, y:0, val:2};
-        
-        function mapClick(e) {
-            const rect = document.getElementById('court-map').getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const dx = x - 150; const dy = y - 35;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            const val = (dist > 120) ? 3 : 2; 
-            
-            lastShot = {x, y, val};
-            
-            const m = document.createElement('div');
-            m.className = "shot-mark";
-            m.style.left = x+"px"; m.style.top = y+"px";
-            document.getElementById('court-map').appendChild(m);
-            setTimeout(()=>m.remove(), 1000);
-            document.getElementById('shot-title').innerText = "TIRO DA " + val;
-        }
-
-        function confirmShot(made) {
-            const p = g.players[g.sel];
-            if(made) {
-                p.pts += lastShot.val;
-                if(g.home) g.sH += lastShot.val; else g.sA += lastShot.val;
-                flash('green');
-            }
-            p.shots.push({ ...lastShot, made, q: g.q });
-            addLog("TIRO", made?lastShot.val:0, made?"Segnato":"Sbagliato");
-            closeModal('mod-shot');
-            updateUI();
-        }
-
-        function openFT() { document.getElementById('ft-seq').innerHTML=""; openModal('mod-ft'); }
-        function regFT(made) {
-            const div = document.getElementById('ft-seq');
-            div.innerHTML += made ? '<span style="color:lime">O </span>' : '<span style="color:red">X </span>';
-            if(g.sel) {
-                const p = g.players[g.sel];
-                if(made) {
-                    p.pts += 1;
-                    if(g.home) g.sH += 1; else g.sA += 1;
-                }
-                addLog("TL", made?1:0, made?"Segnato":"Sbagliato");
-                updateUI();
-            }
-        }
-
-        function addFoul(isFoul) {
-            if(!g.sel) return;
-            const p = g.players[g.sel];
-            p.f++;
-            if(g.home) g.fH++; else g.fA++;
-            flash('red');
-            addLog("FALLO", 0, p.f+"° Pers");
-            if(p.f >= 5) openSub();
-            updateUI();
-        }
-
-        function openFoulSub() {
-            const list = document.getElementById('fs-opp-list');
-            list.innerHTML = "";
-            g.opp.forEach(o => {
-                list.innerHTML += `<button class="bg-sec" style="padding:10px" onclick="selOppFoul('${o.n}')">#${o.n}<br><small>${o.f} falli</small></button>`;
-            });
-            openModal('mod-foul-sub');
-        }
-
-        function selOppFoul(n) {
-            const o = g.opp.find(x => x.n == n);
-            o.f++;
-            if(!g.home) g.fH++; else g.fA++;
-            updateUI();
-        }
-
-        function addStat(type) {
-            if(!g.sel) return;
-            flash('blue');
-            addLog(type, 0, type);
-            updateUI();
-        }
-
-        import { addEvent, getEvents } from "./core/eventStore.js";
-
-        function addOppPoint(points) {
-            // CREA evento
-            addEvent({
-            type: "SCORE_AWAY",
-            points: points,
-            time: g.clock // registra l’orario del cronometro
-        });
-
-    // Ricalcola lo stato corrente
-        const state = buildMatchState(); // da matchEngine.js
-        g.score.opp = state.score.away;
-
-        // Aggiorna UI
-        updateUI();
-        
-        }
-        
-        function addTimeOut(team) {
-            if(team === 'H') g.tH++; else g.tA++;
-            updateUI();
-        }
-
-        // --- CAMBI ---
-        let subOut = [], subIn = [];
-        function openSub() {
-            const listIn = document.getElementById('sub-list-in');
-            const listOut = document.getElementById('sub-list-out');
-            listIn.innerHTML = ""; listOut.innerHTML = "";
-            subOut = []; subIn = [];
-
-            Object.values(g.players).forEach(p => {
-                const isOut = (p.f >= 5 || p.d > 0 || (p.t+p.u >= 2));
-                const div = document.createElement('div');
-                div.className = `p-card ${isOut?'out':''}`;
-                div.innerHTML = `<span class="p-num">${p.n}</span>`;
-                div.onclick = () => toggleSub(p.n, div, g.onCourt.includes(p.n));
-                
-                if(g.onCourt.includes(p.n)) listIn.appendChild(div);
-                else listOut.appendChild(div);
-            });
-            openModal('mod-sub');
-        }
-
-        function toggleSub(n, div, isCourt) {
-            if(isCourt) {
-                if(subOut.includes(n)) { subOut = subOut.filter(x=>x!==n); div.classList.remove('selected'); }
-                else { subOut.push(n); div.classList.add('selected'); }
-            } else {
-                if(subIn.includes(n)) { subIn = subIn.filter(x=>x!==n); div.classList.remove('selected'); }
-                else { subIn.push(n); div.classList.add('selected'); }
-            }
-            const t = document.getElementById('sub-time').value;
-            const validT = t.length >= 3 && parseInt(t.slice(-2)) < 60;
-            document.getElementById('btn-conf-sub').disabled = !(subIn.length === subOut.length && subIn.length > 0 && validT);
-        }
-
-        function execSub() {
-            const tStr = document.getElementById('sub-time').value;
-            const sec = parseInt(tStr.slice(0, -2)) * 60 + parseInt(tStr.slice(-2));
-            
-            subOut.forEach(n => {
-                const p = g.players[n];
-                p.min += (p.lastIn - sec); 
-                g.onCourt = g.onCourt.filter(x => x !== n);
-            });
-            
-            subIn.forEach(n => {
-                const p = g.players[n];
-                p.lastIn = sec; 
-                g.onCourt.push(n);
-            });
-            
-            addLog("CAMBIO", 0, `OUT:${subOut} IN:${subIn}`);
-            closeModal('mod-sub');
-            updateUI();
-        }
-
-        // --- FALLI SPECIALI ---
-        function openSpecials() {
-            g.specType = null;
-            document.querySelectorAll('#mod-spec button').forEach(b => b.classList.remove('bg-warn'));
-            const d = document.getElementById('spec-players');
-            d.innerHTML = "";
-            Object.values(g.players).forEach(p => {
-                d.innerHTML += `<div class="p-card" onclick="assignSpec('${p.n}')"><span class="p-num">${p.n}</span></div>`;
-            });
-            openModal('mod-spec');
-        }
-        
-        function selSpType(t) {
-            g.specType = t;
-        }
-
-        function assignSpec(target) {
-            if(!g.specType) return alert("Seleziona tipo fallo");
-            if(target === 'BENCH') {
-                addLog("SPECIALE", 0, "Panchina "+g.specType);
-            } else {
-                const p = g.players[target];
-                if(g.specType === 'T') p.t++;
-                if(g.specType === 'U') p.u++;
-                if(g.specType === 'D') p.d++;
-                p.f++; 
-                if(g.home) g.fH++; else g.fA++; 
-                addLog("SPECIALE", 0, `${target} ${g.specType}`);
-            }
-            closeModal('mod-spec');
-            updateUI();
-        }
-
-        // --- EXPORT & UNDO ---
-        function undoLast() {
-            if(g.events.length === 0) return;
-            const last = g.events.pop();
-            alert("Evento rimosso: " + last.desc + ". Controlla punteggi e falli manualmente.");
-            updateUI();
-        }
-
-        function openEvents() {
-            const l = document.getElementById('events-list');
-            l.innerHTML = g.events.map(e => `<div>Q${e.q} - ${e.desc} (${e.p||''})</div>`).reverse().join('');
-            openModal('mod-events');
-        }
-
-        function openFalliMod() {
-            const n = document.getElementById('fs-noi');
-            const l = document.getElementById('fs-loro');
-            n.innerHTML = "<h4>NOI</h4>" + Object.values(g.players).sort((a,b)=>b.f-a.f).map(p => 
-                `<div class="row" style="border-bottom:1px solid #444"><b style="border:1px solid red; padding:2px; color:${p.f>0?'red':'white'}">${p.f}</b>&nbsp;#${p.n} ${p.name}</div>`
-            ).join('');
-            
-            l.innerHTML = "<h4>LORO</h4>" + g.opp.sort((a,b)=>b.f-a.f).map(o => 
-                `<div class="row"><b style="border:1px solid red; padding:2px;">${o.f}</b>&nbsp;#${o.n}</div>`
-            ).join('');
-            openModal('mod-foul-sit');
-        }
-
-        function calcStats() {
-            const t = document.getElementById('stats-body');
-            let h = `<table border="1" style="width:100%; border-collapse:collapse;">
-                <tr><th>#</th><th>MIN</th><th>PTS</th><th>F</th></tr>`;
-            Object.values(g.players).forEach(p => {
-                let m = Math.floor(p.min/60);
-                let s = p.min%60;
-                h += `<tr><td>${p.n}</td><td>${m}:${s<10?'0'+s:s}</td><td>${p.pts}</td><td>${p.f}</td></tr>`;
-            });
-            h += "</table>";
-            t.innerHTML = h;
-        }
-
-        function exportXLSX() {
-            const data = Object.values(g.players).map(p => ({
-                Numero: p.n, Nome: p.name, Punti: p.pts, Falli: p.f, 
-                Minuti: Math.floor(p.min/60)+":"+(p.min%60)
-            }));
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Stats");
-            XLSX.writeFile(wb, "Scout_"+g.id+".xlsx");
-        }
-
-        function exportPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.text("Scout Partita: " + g.id, 10, 10);
-            
-            const rows = Object.values(g.players).map(p => [
-                p.n, p.name, p.pts, p.f, Math.floor(p.min/60)+":"+(p.min%60)
-            ]);
-            
-            doc.autoTable({
-                head: [['#', 'Nome', 'PTS', 'Falli', 'Min']],
-                body: rows,
-                startY: 20
-            });
-            doc.save("Scout_"+g.id+".pdf");
-        }
-
-        import { clearEvents } from "./core/eventStore.js";
-import { buildInitialState } from "./core/matchEngine.js";
-
-function startNewGame() {
-    // 1️⃣ mostra la schermata nuova
-    nav('view-new');
-
-    // 2️⃣ resetta il motore
-    clearEvents();
-    g = buildInitialState();
-
-    // 3️⃣ aggiorna la UI
-    updateUI();
+  </div>
+
+  <button class="btnW" style="background:var(--g);color:#fff" onclick="applySetup()">APPLICA</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="resetAll()">RESET TOTALE</button>
+  <div class="muted2" style="font-size:11px;margin-top:10px;line-height:1.25">Nota: Il periodo parte solo dopo <b>CONFERMA (5/5)</b>.</div>
+</div></div>
+
+<!-- CHOOSE 5 -->
+<div id="modalChoose5" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">SCEGLI 5</h3>
+    <button class="closeTop" onclick="cancelChoose5()">CHIUDI</button>
+  </div>
+  <div class="pill">Chi ha 5 falli o espulsione è disabilitato</div>
+  <div class="grid-players" id="choose5Grid"></div>
+  <button id="btnConfirm5" class="btnW" style="background:grey;color:#fff" disabled onclick="confirm5()">CONFERMA (0/5)</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="cancelChoose5()">ANNULLA</button>
+</div></div>
+
+<!-- END PERIOD -->
+<div id="modalEndPeriod" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 id="endPeriodTitle" style="margin:0">FINE PERIODO</h3>
+    <button class="closeTop" onclick="closeModal('modalEndPeriod')">CHIUDI</button>
+  </div>
+  <button class="btnW" style="background:var(--g);color:#fff" onclick="nextPeriod()">SUCCESSIVO</button>
+  <button class="btnW" style="background:var(--r);color:#fff" onclick="endGame()">TERMINA PARTITA</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalEndPeriod')">ANNULLA</button>
+</div></div>
+
+<!-- GAME OVER -->
+<div id="modalGameOver" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">PARTITA TERMINATA ✅</h3>
+    <button class="closeTop" onclick="closeModal('modalGameOver')">CHIUDI</button>
+  </div>
+  <div class="pill">Azioni finali</div>
+  <div class="endActions">
+    <button class="btnW" style="background:#e0e0e0;color:#111" onclick="openModal('modalFalliCheck')">🧾 CHECK FALLI</button>
+    <button class="btnW" style="background:#add8e6;color:#111" onclick="openStats()">📊 STAT LIVE</button>
+    <button class="btnW" style="background:#4caf50;color:#fff" onclick="exportExcel()">📥 SCARICA EXCEL</button>
+    <button class="btnW" style="background:var(--y);color:#111" onclick="exportPDF()">🧾 SCARICA PDF</button>
+    <button class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="openEvents()">🧾 EVENTI</button>
+    <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalGameOver');resetToSetup()">↩️ CHIUDI (TORNA SETUP)</button>
+  </div>
+</div></div>
+
+<!-- SUB -->
+<div id="modalSub" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">CAMBIO 🔄</h3>
+    <button class="closeTop" onclick="closeModal('modalSub')">CHIUDI</button>
+  </div>
+  <div class="pill">Tempo rimanente (MSS) es: 835 = 8:35</div>
+  <input id="subTime" type="tel" inputmode="numeric" maxlength="3" placeholder="000"/>
+  <div class="pill" style="margin-top:10px">CHI ESCE</div><div class="grid-players" id="outGrid"></div>
+  <div class="pill" style="margin-top:10px">CHI ENTRA</div><div class="grid-players" id="inGrid"></div>
+  <button id="btnConfirmSub" class="btnW" style="background:grey;color:#fff" disabled onclick="addEventSub()">CONFERMA</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalSub')">ANNULLA</button>
+</div></div>
+
+<!-- SHOT -->
+<div id="modalTiro" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 id="shotInfo" style="margin:0">Tiro da ?</h3>
+    <button class="closeTop" onclick="closeShotModal()">CHIUDI</button>
+  </div>
+  <div class="court" id="shotCourt"><div class="arc"></div><div class="paint"></div></div>
+  <div class="row-2" style="margin-top:10px">
+    <button class="btnA" style="background:var(--g);color:#fff" onclick="addEventShot(true)">SEGNATO</button>
+    <button class="btnA" style="background:var(--r);color:#fff" onclick="addEventShot(false)">SBAGLIATO</button>
+  </div>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeShotModal()">ANNULLA</button>
+</div></div>
+
+<!-- FT -->
+<div id="modalFT" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">TIRI LIBERI</h3>
+    <button class="closeTop" onclick="closeModal('modalFT')">CHIUDI</button>
+  </div>
+  <div class="pill">Tocca per segnare (✅) o sbagliare (❌)</div>
+  <div id="ftSeq" style="font-size:26px;margin:10px 0"></div>
+  <div class="row-2">
+    <button class="btnA" style="background:var(--g);color:#fff" onclick="addEventFT(true)">OK</button>
+    <button class="btnA" style="background:var(--r);color:#fff" onclick="addEventFT(false)">X</button>
+  </div>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalFT')">FINE</button>
+</div></div>
+
+<!-- FOUL SUF -->
+<div id="modalFoulSuf" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">FALLO SUBITO</h3>
+    <button class="closeTop" onclick="closeModal('modalFoulSuf')">CHIUDI</button>
+  </div>
+  <div class="pill">Seleziona chi ha fatto fallo (avversari)</div>
+  <div class="grid-players" id="oppFoulGrid"></div>
+  <button id="btnRimessa" class="btnW" style="background:#e0e0e0;color:#111" disabled onclick="addEventFoulSuf(false)">RIMESSA</button>
+  <button id="btnLiberi" class="btnW" style="background:var(--y);color:#111" disabled onclick="addEventFoulSuf(true)">LIBERI</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalFoulSuf')">ANNULLA</button>
+</div></div>
+
+<!-- SPECIAL FOUL -->
+<div id="modalSpecial" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">FALLO SPECIALE</h3>
+    <button class="closeTop" onclick="closeModal('modalSpecial')">CHIUDI</button>
+  </div>
+  <div class="pill">Seleziona 1 tipo • poi uno o più giocatori</div>
+
+  <div class="tabs">
+    <button class="tab act" id="tabT" onclick="setSpecialType('T')">TECNICO</button>
+    <button class="tab" id="tabU" onclick="setSpecialType('U')">ANTISPORTIVO</button>
+    <button class="tab" id="tabD" onclick="setSpecialType('D')">ESPULSIONE</button>
+  </div>
+
+  <div class="pill">SQUADRA CASA</div>
+  <div class="grid-players" id="specHomeGrid"></div>
+  <button id="benchHomeBtn" class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleBench('Home')">🏟️ PANCHINA CASA</button>
+
+  <div class="hr"></div>
+
+  <div class="pill">SQUADRA OSPITE</div>
+  <div class="grid-players" id="specAwayGrid"></div>
+  <button id="benchAwayBtn" class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleBench('Away')">🏟️ PANCHINA OSPITE</button>
+
+  <button id="btnSpecOk" class="btnW" style="background:grey;color:#fff" disabled onclick="addEventSpecial()">CONFERMA</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalSpecial')">ANNULLA</button>
+</div></div>
+
+<!-- CHECK FOULS -->
+<div id="modalFalliCheck" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">CHECK FALLI</h3>
+    <button class="closeTop" onclick="closeModal('modalFalliCheck')">CHIUDI</button>
+  </div>
+  <div class="pill"><span id="cfTeams">-</span></div>
+  <div class="grid2">
+    <div class="kpi"><div class="t" id="cfHomeName">CASA</div><div class="v"><span id="cfHome">0</span> F.SQ</div><div class="s">Dettaglio sotto</div></div>
+    <div class="kpi"><div class="t" id="cfAwayName">TRASFERTA</div><div class="v"><span id="cfAway">0</span> F.SQ</div><div class="s">Dettaglio sotto</div></div>
+  </div>
+  <div class="pill" style="margin-top:12px">MIA SQUADRA</div><div id="cfMyList"></div>
+  <div class="pill" style="margin-top:12px">AVVERSARI</div><div id="cfOppList"></div>
+</div></div>
+
+<!-- STATS -->
+<div id="modalStats" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">STAT LIVE</h3>
+    <button class="closeTop" onclick="closeModal('modalStats')">CHIUDI</button>
+  </div>
+  <div class="pill">Solo mia squadra • seleziona SQUADRA o un giocatore</div>
+  <div class="selector" id="statsSelector"></div>
+
+  <div class="grid2">
+    <div class="kpi kpiY" id="minsBox"><div class="t">MINUTI</div><div class="v" id="minSel">00:00</div></div>
+    <div class="kpi kpiY"><div class="t">PUNTI</div><div class="v" id="ptsSel">0</div></div>
+  </div>
+
+  <div class="grid3">
+    <div class="kpi"><div class="t">TIRI DA 2</div><div class="v" id="k2">0/0</div><div class="s" id="k2p">0,00%</div></div>
+    <div class="kpi"><div class="t">TIRI DA 3</div><div class="v" id="k3">0/0</div><div class="s" id="k3p">0,00%</div></div>
+    <div class="kpi"><div class="t">TIRI LIBERI</div><div class="v" id="kft">0/0</div><div class="s" id="kftp">0,00%</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="kpi"><div class="t">FALLI FATTI</div><div class="v" id="kfmade">0</div></div>
+    <div class="kpi"><div class="t">FALLI SUBITI</div><div class="v" id="kfsuf">0</div></div>
+  </div>
+
+  <div class="grid4">
+    <div class="kpi"><div class="t">PERSE</div><div class="v" id="kto">0</div></div>
+    <div class="kpi"><div class="t">RECUPERATE</div><div class="v" id="kstl">0</div></div>
+    <div class="kpi"><div class="t">RIMB. OFF</div><div class="v" id="kro">0</div></div>
+    <div class="kpi"><div class="t">RIMB. DIF</div><div class="v" id="krd">0</div></div>
+  </div>
+
+  <div style="margin-top:12px"><div class="pill">HEATMAP TIRI</div>
+    <div class="court"><div class="arc"></div><div class="paint"></div><canvas class="ov" id="heatCanvas" width="310" height="240"></canvas></div>
+  </div>
+  <div style="margin-top:12px"><div class="pill">SHOT CHART (✅ / ❌)</div>
+    <div class="court"><div class="arc"></div><div class="paint"></div><canvas class="ov" id="shotCanvas" width="310" height="240"></canvas></div>
+  </div>
+</div></div>
+
+<!-- EVENTS -->
+<div id="modalEvents" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">EVENTI</h3>
+    <button class="closeTop" onclick="closeModal('modalEvents')">CHIUDI</button>
+  </div>
+  <div class="pill">Filtro + modifica/elimina • ricalcolo automatico</div>
+
+  <div class="filterRow" id="evFilters"></div>
+  <input id="evSearch" placeholder="Cerca (es. #7, tiro, cambio...)" />
+
+  <div class="row-2" style="margin-top:10px">
+    <button class="btnA gry" onclick="undoLast();renderEvents()">↩️ UNDO (ultimo)</button>
+    <button class="btnA dk" onclick="closeModal('modalEvents')">CHIUDI</button>
+  </div>
+
+  <div id="eventsList"></div>
+</div></div>
+
+<!-- EDIT EVENT -->
+<div id="modalEdit" class="modal hidden"><div class="mcard">
+  <div class="topbar">
+    <h3 style="margin:0">MODIFICA EVENTO</h3>
+    <button class="closeTop" onclick="closeModal('modalEdit')">CHIUDI</button>
+  </div>
+  <div class="pill" id="editHint">-</div>
+  <div id="editForm"></div>
+  <button class="btnW" style="background:var(--g);color:#fff" onclick="saveEdit()">SALVA</button>
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalEdit')">ANNULLA</button>
+</div></div>
+
+<script>
+/* ===================== CORE STATE ===================== */
+const STORAGE_KEY = 'BSP_V7_AUTOSAVE';
+
+const S = {
+  status:'idle', nQ:1,
+  quarterLenMin:10, otLenMin:5,
+  noi:'Home', nameH:'CASA', nameA:'TRASFERTA',
+  sH:0,sA:0, fH:0,fA:0, toH:0,toA:0,
+  tH:0,tA:0, benchHomeSym:'', benchAwaySym:'', // team technical count (for icon only)
+  myRoster:[], oppRoster:[],
+  p:{}, opp:{}, // opp: { fouls, specials[] }
+  expelled:new Set(),
+  inC:[], selP:null,
+  shotX:null, shotY:null, shotVal:2,
+  selOpp:null,
+  events:[],
+  shots:[],
+  stints:[]
+};
+
+let Spec = { type:'T', selHome:new Set(), selAway:new Set(), benchHome:false, benchAway:false };
+let editId=null;
+let editBenchHome=false, editBenchAway=false, editSelMy=new Set(), editSelOpp=new Set();
+let statsSel='ALL';
+let subAutoOut=null;
+
+/* ===================== HELPERS ===================== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s||'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#039;");
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const flash=t=>{ document.body.classList.add('flash-'+t); setTimeout(()=>document.body.classList.remove('flash-'+t),150); };
+const label=()=> (S.nQ>4?'OT':`Q${S.nQ}`);
+const toLim=()=> (S.nQ<=2?2:(S.nQ<=4?3:1));
+const lenSec=()=> ((S.nQ<=4?S.quarterLenMin:S.otLenMin)*60);
+const fmt=sec=>{ sec=Math.max(0,Math.floor(sec||0)); const m=Math.floor(sec/60), s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); };
+const pct=(m,a)=> a<=0?'0,00%':((m/a)*100).toFixed(2).replace('.',',')+'%';
+const uid=()=> 'e'+Math.random().toString(16).slice(2)+Date.now().toString(16);
+
+
+/* ===================== LIVE LINK / VIEWER MODE ===================== */
+function qs(name){ return new URLSearchParams(location.search).get(name); }
+const IS_VIEWER = qs('view') === '1';
+let CLOUD_GAME_ID = qs('game') || null;
+let FB_DB=null, FB_REF=null;
+
+function initFirebase(){
+  // ✅ Incolla qui la tua config Firebase (oppure definisci window.__FIREBASE_CONFIG__ prima di questo script)
+  const firebaseConfig = window.__FIREBASE_CONFIG__ || {
+    apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
+    authDomain: "basket-reggello-scout.firebaseapp.com",
+    databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "basket-reggello-scout",
+    storageBucket: "basket-reggello-scout.firebasestorage.app",
+    messagingSenderId: "395815946220",
+    appId: "1:395815946220:web:68c00b4c7f2da1754722c9"
+  };
+  try{
+    if(!firebase?.apps?.length) firebase.initializeApp(firebaseConfig);
+    FB_DB = firebase.database();
+    return true;
+  }catch(e){
+    alert("Firebase non configurato o non disponibile. Incolla firebaseConfig nel codice.");
+    return false;
+  }
+}
+
+function connectToCloud(gameId){
+  if(!initFirebase()) return;
+  CLOUD_GAME_ID = String(gameId||"").trim();
+  if(!CLOUD_GAME_ID) return;
+  FB_REF = FB_DB.ref("games/"+CLOUD_GAME_ID);
+  setSyncLabel("LIVE: "+CLOUD_GAME_ID + (IS_VIEWER?" (VIEW)":""));
+
+  // Viewer: ascolta e applica
+  FB_REF.on("value", snap=>{
+    const data=snap.val();
+    if(!data || !data.state) return;
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data.state));
+      loadAutosave();
+      replay();
+      updateUI();
+    }catch(e){}
+  });
+}
+
+function cloudPush(stateObj){
+  if(IS_VIEWER) return;
+  if(!FB_REF) return;
+  try{ FB_REF.set({updatedAt:Date.now(), state: stateObj}); }catch(e){}
+}
+
+async function copyLiveLink(){
+  if(IS_VIEWER){
+    const clean = location.origin+location.pathname;
+    try{ await navigator.clipboard.writeText(clean); alert("Link base copiato ✅"); }catch(e){ prompt("Copia:", clean); }
+    return;
+  }
+  if(!CLOUD_GAME_ID){
+    const id = prompt("ID partita per LIVE (es. U15_vs_ABC_2026-01-14):");
+    if(!id) return;
+    connectToCloud(id);
+  }
+  const base = location.origin + location.pathname;
+  const url = `${base}?view=1&game=${encodeURIComponent(CLOUD_GAME_ID)}`;
+  try{ await navigator.clipboard.writeText(url); alert("Link copiato ✅\n\n"+url); }
+  catch(e){ prompt("Copia il link:", url); }
+}
+
+function manualSave(){ autosave(); alert("Salvato ✅"); }
+function hasAutosave(){ try{ return !!localStorage.getItem(STORAGE_KEY); }catch(e){ return false; } }
+function restoreAutosave(){ closeModal("modalStartup"); loadAutosave(); replay(); updateUI(); }
+function startNewGame(){
+  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  const clean = location.origin + location.pathname;
+  if(location.search){ try{ history.replaceState({}, "", clean); }catch(e){} }
+  closeModal("modalStartup");
+  openModal("modalSetup");
+}
+
+function addSym(s,ch){ s=String(s||""); return s.includes(ch)?s:(s+ch); }
+
+
+function openModal(id){
+  if(id==='modalFalliCheck') refreshFoulsCheck();
+  if(id==='modalEvents') renderEvents();
+  document.getElementById(id).classList.remove('hidden');
+}
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+
+function parseMSS(raw){
+  const d=String(raw||'').replace(/\D/g,'').slice(0,3);
+  if(d.length!==3) return {ok:false,digits:d,rem:null};
+  const m=parseInt(d[0],10), ss=parseInt(d.slice(1),10);
+  if(Number.isNaN(m)||Number.isNaN(ss)||ss>59) return {ok:false,digits:d,rem:null};
+  return {ok:true,digits:d,rem:m*60+ss};
+}
+
+/* ===================== SETUP / ROSTERS ===================== */
+function initDefaults(){
+  S.myRoster=[
+    {num:'0',name:'GINO'},{num:'4',name:'GABRIELE'},{num:'5',name:'MINI'},{num:'7',name:'PIETRINO'},
+    {num:'8',name:'GUGLIELMO'},{num:'10',name:'FOSSATI'},{num:'12',name:''},{num:'15',name:''},
+    {num:'23',name:''},{num:'30',name:''},{num:'33',name:''},{num:'99',name:''}
+  ];
+  S.oppRoster=['3','8','12','20','25'];
+  bootstrapRosterData();
+}
+
+function bootstrapRosterData(){
+  S.p={};
+  S.expelled=new Set();
+  S.myRoster.forEach(pl=>{
+    S.p[pl.num]={
+      pts:0,fouls:0,
+      twoM:0,twoA:0, threeM:0,threeA:0, ftM:0,ftA:0,
+      foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,
+      specials:[], // history
+      tCount:0, uCount:0 // for automatic expulsion rule
+    };
+  });
+  S.opp={};
+  S.oppRoster.forEach(n=>{
+    S.opp[n]={ fouls:0, specials:[], tCount:0, uCount:0, expelled:false };
+  });
+}
+
+function parseMyTeam(t){
+  const lines=String(t||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const nums=[],map={};
+  lines.forEach(line=>{
+    const parts=line.split(',').map(x=>x.trim()).filter(Boolean);
+    const num=(parts[0]||'').replace(/\D/g,''); if(!num) return;
+    const n=String(parseInt(num,10)); nums.push(n);
+    map[n]=(parts.slice(1).join(' ')||'').toUpperCase();
+  });
+  const seen=new Set(), uniq=[]; nums.forEach(n=>{ if(!seen.has(n)){seen.add(n);uniq.push(n)} });
+  return uniq.map(n=>({num:n,name:map[n]||''}));
+}
+function parseOppTeam(t){
+  const lines=String(t||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+  const nums=[];
+  lines.forEach(line=>{ const num=line.replace(/\D/g,''); if(!num) return; nums.push(String(parseInt(num,10))); });
+  const seen=new Set(), uniq=[]; nums.forEach(n=>{ if(!seen.has(n)){seen.add(n);uniq.push(n)} });
+  return uniq;
 }
 
 
-    </script>
-        <script type="module" src="./core/eventStore.js"></script>
-        <script type="module" src="./core/matchEngine.js"></script>
+function connectCloudFromSetup(){
+  const inp = document.getElementById('cloudIdInput');
+  const id = (inp ? inp.value : '').trim();
+  if(!id){ alert('Inserisci un ID partita'); return; }
+  connectToCloud(id);
+  try{ localStorage.setItem('BSP_CLOUD_GAME_ID', id); }catch(e){}
+  alert('Cloud connesso ✅\nOra puoi usare 📡 LIVE LINK');
+}
+
+function applySetup(){
+  S.quarterLenMin=parseInt($('quarterLenSel').value,10)||10;
+  S.otLenMin=parseInt($('otLenSel').value,10)||5;
+  S.noi=$('noiSel').value==='Away'?'Away':'Home';
+
+  const tn=String($('teamNames').value||'').trim();
+  if(tn.includes(';')){
+    const [h,a]=tn.split(';');
+    S.nameH=(h||'CASA').trim()||'CASA';
+    S.nameA=(a||'TRASFERTA').trim()||'TRASFERTA';
+  }
+
+  const my=parseMyTeam($('myTeamInput').value);
+  const opp=parseOppTeam($('oppTeamInput').value);
+
+  if(my.length) S.myRoster=my;
+  if(opp.length) S.oppRoster=opp;
+
+  // keep events, then replay with new rosters
+  bootstrapRosterData();
+  renderRoster();
+  replay();
+  autosave();
+  closeModal('modalSetup');
+}
+
+function resetAll(){
+  if(!confirm('Reset totale? Cancella eventi e punteggi.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+/* ===================== UI RENDER ===================== */
+function setBtnState(){
+  const b=$('btnStato');
+  if(S.status==='ended'){ b.textContent='FINITA'; b.style.background='#333'; return; }
+  if(S.status==='idle'){ b.textContent=`INIZIA ${label()}`; b.style.background=css('--g'); }
+  else { b.textContent=`FINE ${label()}`; b.style.background=css('--r'); }
+}
+
+function renderDots(id,used){
+  const c=$(id); c.innerHTML='';
+  const lim=toLim();
+  const u=Math.max(0,Math.min(used,lim));
+  for(let i=0;i<lim;i++){
+    const d=document.createElement('div');
+    d.className='dot'+(i<u?' filled':'');
+    c.appendChild(d);
+  }
+}
+
+function renderRoster(){
+  const g=$('rosterGrid'); g.innerHTML='';
+  S.myRoster.forEach(pl=>{
+    const n=pl.num;
+    const st=S.p[n]||{pts:0,fouls:0,specials:[]};
+    const sym=(st.specials||[]).join('');
+    const b=document.createElement('button');
+    b.className='player-card'; b.id='p'+n;
+    b.innerHTML=`
+      <div class="pname">${esc(pl.name||'')}</div>
+      <div class="pnum">${esc(n)}</div>
+      <div class="bpts" id="pts${n}">${st.pts||0}</div>
+      <div class="bmid" id="sym${n}">${esc(sym)}</div>
+      <div class="bf" id="foul${n}">${st.fouls||0}</div>
+    `;
+    b.onclick=()=>selectPlayer(n);
+    g.appendChild(b);
+  });
+  updateUI();
+}
+
+function updateUI(){
+  $('nameH').textContent=S.nameH;
+  $('nameA').textContent=S.nameA;
+
+  $('scoreHome').textContent=S.sH;
+  $('scoreAway').textContent=S.sA;
+
+  $('sfHome').textContent=S.fH;
+  $('sfAway').textContent=S.fA;
+
+  $('tHome').textContent=S.tH;
+  $('tAway').textContent=S.tA;
+
+  $('labelPeriodo').textContent=label();
+
+  // BONUS FIBA: dal 4° fallo
+  $('bHome').style.display = S.fH >= 4 ? 'block' : 'none';
+  $('bAway').style.display = S.fA >= 4 ? 'block' : 'none';
+
+  // update roster cards
+  S.myRoster.forEach(pl=>{
+    const n=pl.num;
+    const st=S.p[n];
+    const btn=$('p'+n); if(!btn) return;
+
+    $('pts'+n).textContent=st.pts;
+    $('foul'+n).textContent=st.fouls;
+    $('sym'+n).textContent=(st.specials||[]).join('');
+
+    btn.classList.toggle('in', S.inC.includes(n));
+    btn.classList.toggle('sel', S.selP===n);
+
+    const fouledOut = st.fouls>=5;
+    const expelled = S.expelled.has(n);
+    btn.classList.toggle('dis', fouledOut || expelled);
+  });
+
+  if(S.selP && !S.inC.includes(S.selP)) S.selP=null;
+
+  $('azioni').style.display = (S.status==='playing' && S.inC.length===5) ? 'block' : 'none';
+
+  renderDots('dotsHome', S.toH);
+  renderDots('dotsAway', S.toA);
+
+  setBtnState();
+}
+
+function selectPlayer(n){
+  n=String(n);
+  if(S.status!=='playing') return;
+  if(!S.inC.includes(n)) return;
+  if(S.p[n]?.fouls>=5) return;
+  if(S.expelled.has(n)) return;
+  S.selP = (S.selP===n) ? null : n;
+  updateUI();
+}
+
+/* ===================== PERIOD FLOW ===================== */
+function togglePeriodo(){
+  if(S.status==='ended') return;
+  if(S.status==='idle'){
+    S.choose5Sel = new Set();
+    buildChoose5();
+    openModal('modalChoose5');
+    return;
+  }
+  $('endPeriodTitle').textContent = `FINE PERIODO ${label()}`;
+  openModal('modalEndPeriod');
+}
+
+function buildChoose5(){
+  const grid=$('choose5Grid'); grid.innerHTML='';
+  S.myRoster.forEach(pl=>{
+    const n=pl.num;
+    const st=S.p[n];
+    const b=document.createElement('button');
+    b.className='player-card'; b.dataset.num=n;
+    b.innerHTML=`
+      <div class="pname">${esc(pl.name||'')}</div>
+      <div class="pnum">${esc(n)}</div>
+      <div class="bf">${st.fouls||0}</div>
+    `;
+    const disabled=(st.fouls>=5)||S.expelled.has(n);
+    if(disabled) b.classList.add('dis');
+    else b.onclick=()=>{
+      if(S.choose5Sel.has(n)){S.choose5Sel.delete(n);b.classList.remove('sel')}
+      else{ if(S.choose5Sel.size>=5) return; S.choose5Sel.add(n);b.classList.add('sel') }
+      updateConfirm5();
+    };
+    grid.appendChild(b);
+  });
+  updateConfirm5();
+}
+function updateConfirm5(){
+  const c=$('btnConfirm5');
+  const k=S.choose5Sel.size;
+  c.textContent=`CONFERMA (${k}/5)`;
+  c.disabled=(k!==5);
+  c.style.background=(k===5)?css('--g'):'grey';
+}
+function cancelChoose5(){
+  closeModal('modalChoose5');
+  S.choose5Sel=new Set();
+  S.status='idle'; S.inC=[]; S.selP=null;
+  updateUI();
+}
+function confirm5(){
+  if(S.choose5Sel.size!==5) return;
+  closeModal('modalChoose5');
+  addEvent({type:'start_period', payload:{ nQ:S.nQ, lineup:[...S.choose5Sel], periodLenSec:lenSec() }});
+}
+function nextPeriod(){ closeModal('modalEndPeriod'); addEvent({type:'end_period', payload:{ nQ:S.nQ, action:'next' }}); }
+function endGame(){ closeModal('modalEndPeriod'); addEvent({type:'end_period', payload:{ nQ:S.nQ, action:'end_game' }}); }
+
+/* ===================== SHOT UI ===================== */
+function setupCourt(){
+  const court=$('shotCourt');
+  court.addEventListener('click',e=>{
+    const r=court.getBoundingClientRect();
+    S.shotX=Math.round(e.clientX-r.left);
+    S.shotY=Math.round(e.clientY-r.top);
+
+    const cx=r.width/2, hy=30;
+    const d=Math.hypot(S.shotX-cx, S.shotY-hy);
+    S.shotVal=(d>130||(S.shotY<hy&&(S.shotX<20||S.shotX>r.width-20)))?3:2;
+
+    $('shotInfo').textContent=`Tiro da ${S.shotVal} punti`;
+
+    court.querySelectorAll('.mark').forEach(x=>x.remove());
+    const m=document.createElement('div');
+    m.className='mark';
+    m.style.left=S.shotX+'px';
+    m.style.top=S.shotY+'px';
+    m.style.background=(S.shotVal===3)?'#ffeb3b':'#ff4444';
+    court.appendChild(m);
+  });
+}
+function closeShotModal(){
+  $('shotCourt').querySelectorAll('.mark').forEach(x=>x.remove());
+  S.shotX=S.shotY=null; S.shotVal=2;
+  $('shotInfo').textContent='Tiro da ?';
+  closeModal('modalTiro');
+}
+
+/* ===================== EVENT SOURCING ===================== */
+function addEvent(e){
+  const ev={ id:uid(), ts:Date.now(), type:e.type, payload:e.payload||{} };
+  S.events.push(ev);
+  replay();
+  autosave();
+
+  // if my player expelled in this event and is in court => openSub
+  if(ev.type==='special_foul'){
+    const out = (ev.payload.targets||[]).filter(t=>t.team==='my' && t.kind==='D' && t.num).map(t=>String(t.num));
+    const first = out.find(n=>S.inC.includes(n));
+    if(first) openSub(first);
+  }
+}
+
+function undoLast(){
+  if(!S.events.length) return;
+  S.events.pop();
+  replay();
+  autosave();
+}
+
+function replay(){
+  // derived scratch
+  const base={
+    status:'idle', nQ:1,
+    sH:0,sA:0, fH:0,fA:0, toH:0,toA:0,
+    tH:0,tA:0,
+    inC:[], selP:null,
+    p:{}, opp:{}, expelled:new Set(),
+    shots:[], stints:[]
+  };
+
+  // init from current rosters
+  S.myRoster.forEach(pl=>{
+    base.p[pl.num]={
+      pts:0,fouls:0,
+      twoM:0,twoA:0, threeM:0,threeA:0, ftM:0,ftA:0,
+      foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,
+      specials:[], tCount:0, uCount:0
+    };
+  });
+  S.oppRoster.forEach(n=>{
+    base.opp[n]={ fouls:0, specials:[], tCount:0, uCount:0, expelled:false };
+  });
+
+  const myIsHome=(S.noi==='Home');
+
+  const incTeamFoulMy=()=>{ if(myIsHome) base.fH++; else base.fA++; };
+  const incTeamFoulOpp=()=>{ if(myIsHome) base.fA++; else base.fH++; };
+  const addScoreMy=v=>{ if(myIsHome) base.sH+=v; else base.sA+=v; };
+  const addScoreOpp=v=>{ if(myIsHome) base.sA+=v; else base.sH+=v; };
+  const timeoutLimitFor=nQ=> (nQ<=2)?2:(nQ<=4?3:1);
+  const periodLenSecFor=nQ=> ((nQ<=4?S.quarterLenMin:S.otLenMin)*60);
+
+  function closeOpenStint(player,q,outRem){
+    for(let i=base.stints.length-1;i>=0;i--){
+      const s=base.stints[i];
+      if(s.player===player && s.q===q && s.outRem===null){ s.outRem=outRem; break; }
+    }
+  }
+
+  function applyAutoExpulsionIfNeeded(player){
+    const st=base.p[player];
+    if(!st) return;
+    const exp = (st.tCount>=2) || (st.uCount>=2) || (st.tCount>=1 && st.uCount>=1);
+    if(exp) base.expelled.add(player);
+  }
+
+  function applyAutoExpulsionIfNeededOpp(num){
+    const st=base.opp[num];
+    if(!st) return;
+    const exp = (st.tCount>=2) || (st.uCount>=2) || (st.tCount>=1 && st.uCount>=1);
+    if(exp) st.expelled=true;
+  }
+
+  for(const ev of S.events){
+    const p=ev.payload||{};
+    switch(ev.type){
+      case 'start_period':{
+        const nQ=Number(p.nQ)||base.nQ;
+        base.nQ=nQ;
+        base.status='playing';
+        // reset team fouls at new period
+        base.fH=0; base.fA=0;
+        base.tH=0; base.tA=0;
+
+        const lineup=(Array.isArray(p.lineup)?p.lineup:[]).map(String).slice(0,5);
+        base.inC=lineup;
+
+        const rem=Number(p.periodLenSec)||periodLenSecFor(base.nQ);
+        for(const pl of base.inC){
+          base.stints.push({player:pl,q:base.nQ,inRem:rem,outRem:null});
+        }
+        break;
+      }
+      case 'end_period':{
+        const q=Number(p.nQ)||base.nQ;
+        for(const pl of base.inC) closeOpenStint(pl,q,0);
+
+        if(p.action==='end_game'){
+          base.status='ended';
+          base.inC=[];
+        }else{
+          if(base.nQ===2){ base.toH=0; base.toA=0; }
+          if(base.nQ>=4){ base.toH=0; base.toA=0; }
+          base.nQ+=1;
+          base.status='idle';
+          base.inC=[];
+        }
+        break;
+      }
+      case 'opp_point': addScoreOpp(Number(p.value)||0); break;
+      case 'timeout':{
+        const lim=timeoutLimitFor(base.nQ);
+        if(p.team==='Home') base.toH=Math.min(base.toH+1,lim);
+        else base.toA=Math.min(base.toA+1,lim);
+        break;
+      }
+      case 'quick':{
+        const pl=String(p.player||''); if(!base.p[pl]) break;
+        if(p.kind==='reb_def') base.p[pl].rd++;
+        if(p.kind==='reb_off') base.p[pl].ro++;
+        if(p.kind==='turnover') base.p[pl].to++;
+        if(p.kind==='steal') base.p[pl].stl++;
+        break;
+      }
+      case 'foul_made':{
+        const pl=String(p.player||''); if(!base.p[pl]) break;
+        base.p[pl].fouls++; base.p[pl].foulMade++;
+        incTeamFoulMy();
+        break;
+      }
+      case 'foul_suf':{
+        const my=String(p.myPlayer||'');
+        const opp=String(p.oppPlayer||'');
+        if(base.p[my]) base.p[my].foulSuf++;
+        if(base.opp[opp]) base.opp[opp].fouls++;
+        incTeamFoulOpp();
+        break;
+      }
+      case 'shot':{
+        const pl=String(p.player||''); if(!base.p[pl]) break;
+        const val=Number(p.val)||2;
+        const made=!!p.made;
+        if(val===2){ base.p[pl].twoA++; if(made) base.p[pl].twoM++; }
+        else { base.p[pl].threeA++; if(made) base.p[pl].threeM++; }
+        base.shots.push({player:pl,val,made,x:Number(p.x),y:Number(p.y)});
+        if(made){ base.p[pl].pts+=val; addScoreMy(val); }
+        break;
+      }
+      case 'ft':{
+        const pl=String(p.player||''); if(!base.p[pl]) break;
+        const made=!!p.made;
+        base.p[pl].ftA++; if(made){ base.p[pl].ftM++; base.p[pl].pts++; addScoreMy(1); }
+        break;
+      }
+      case 'sub':{
+        const q=Number(p.nQ)||base.nQ;
+        const rem=Number(p.remSec);
+        const outs=(Array.isArray(p.outs)?p.outs:[]).map(String);
+        const ins=(Array.isArray(p.ins)?p.ins:[]).map(String);
+        if(!Number.isFinite(rem)) break;
+
+        for(const pl of outs){ closeOpenStint(pl,q,rem); base.inC=base.inC.filter(x=>x!==pl); }
+        for(const pl of ins){
+          if(!base.inC.includes(pl)) base.inC.push(pl);
+          base.stints.push({player:pl,q,inRem:rem,outRem:null});
+        }
+        break;
+      }
+      case 'special_foul':{
+        const kind=String(p.kind||'T'); // T U D
+        const targets=Array.isArray(p.targets)?p.targets:[];
+        for(const t of targets){
+          // bench technical count icon only (no player expulsion rule)
+          if(t.team==='bench_home'){
+            if(kind==='T' || kind==='D') base.benchHomeSym = addSym(base.benchHomeSym, kind);
+            if(myIsHome) { base.fH++; base.tH++; } else { base.fA++; base.tA++; }
+          }
+          if(t.team==='bench_away'){
+            if(kind==='T' || kind==='D') base.benchAwaySym = addSym(base.benchAwaySym, kind);
+            if(myIsHome) { base.fA++; base.tA++; } else { base.fH++; base.tH++; }
+          }
+
+          if(t.team==='my' && t.num && base.p[String(t.num)]){
+            const n=String(t.num);
+            base.p[n].fouls++;
+            base.p[n].foulMade++;
+            incTeamFoulMy();
+
+            if(kind==='T'){ base.p[n].tCount++; base.p[n].specials.push('T'); if(myIsHome) base.tH++; else base.tA++; }
+            if(kind==='U'){ base.p[n].uCount++; base.p[n].specials.push('U'); }
+            if(kind==='D'){ base.p[n].specials.push('D'); base.expelled.add(n); }
+
+            applyAutoExpulsionIfNeeded(n);
+          }
+
+          if(t.team==='opp' && t.num && base.opp[String(t.num)]){
+            const n=String(t.num);
+            base.opp[n].fouls++;
+            incTeamFoulOpp();
+
+            if(kind==='T'){ base.opp[n].tCount++; base.opp[n].specials.push('T'); if(myIsHome) base.tA++; else base.tH++; }
+            if(kind==='U'){ base.opp[n].uCount++; base.opp[n].specials.push('U'); }
+            if(kind==='D'){ base.opp[n].specials.push('D'); base.opp[n].expelled=true; }
+
+            applyAutoExpulsionIfNeededOpp(n);
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  // write back
+  S.status=base.status; S.nQ=base.nQ;
+  S.sH=base.sH; S.sA=base.sA;
+  S.fH=base.fH; S.fA=base.fA;
+  S.toH=base.toH; S.toA=base.toA;
+  S.tH=base.tH; S.tA=base.tA;
+  S._benchHomeSym=base.benchHomeSym;
+  S._benchAwaySym=base.benchAwaySym;
+  S.inC=base.inC;
+  S.p=base.p;
+  S.opp=base.opp;
+  S.expelled=base.expelled;
+  S.shots=base.shots;
+  S.stints=base.stints;
+
+  if(S.selP && (!S.inC.includes(S.selP) || (S.p[S.selP]?.fouls>=5) || S.expelled.has(S.selP))) S.selP=null;
+
+  updateUI();
+
+  if(S.status==='ended'){
+    openModal('modalGameOver');
+  }
+}
+
+/* ===================== ACTIONS => EVENTS ===================== */
+function addEventOppPoint(v){ flash('red'); addEvent({type:'opp_point', payload:{value:Number(v)||0}}); }
+function addEventTimeout(team){ addEvent({type:'timeout', payload:{team}}); }
+
+function addEventQuick(kind){
+  if(!S.selP) return;
+  let fl='blue'; if(kind==='turnover') fl='red'; if(kind==='steal') fl='green';
+  flash(fl);
+  addEvent({type:'quick', payload:{kind, player:S.selP}});
+}
+
+function addEventFoulMade(){
+  if(!S.selP) return;
+  flash('red');
+  addEvent({type:'foul_made', payload:{player:S.selP}});
+  if(S.p[S.selP]?.fouls>=5 && S.inC.includes(S.selP)) openSub(S.selP);
+}
+
+function openFoulSuffered(){
+  S.selOpp=null;
+  buildOppFoulGrid();
+  $('btnRimessa').disabled=true;
+  $('btnLiberi').disabled=true;
+  openModal('modalFoulSuf');
+}
+
+function buildOppFoulGrid(){
+  const g=$('oppFoulGrid'); g.innerHTML='';
+  S.oppRoster.forEach(n=>{
+    const st=S.opp[n]||{fouls:0,specials:[],expelled:false};
+    const sym=(st.specials||[]).join('');
+    const b=document.createElement('button');
+    b.className='player-card'; b.dataset.num=n;
+    b.innerHTML=`<div class="pname">&nbsp;</div><div class="pnum">${esc(n)}</div><div class="bmid">${esc(sym)}</div><div class="bf">${st.fouls||0}</div>`;
+    const disabled=(st.fouls>=5)||!!st.expelled;
+    if(disabled) b.classList.add('dis');
+    else b.onclick=()=>{
+      S.selOpp=(S.selOpp===n)?null:n;
+      [...g.children].forEach(x=>x.classList.remove('sel'));
+      if(S.selOpp) b.classList.add('sel');
+      $('btnRimessa').disabled=!S.selOpp;
+      $('btnLiberi').disabled=!S.selOpp;
+    };
+    g.appendChild(b);
+  });
+}
+
+function addEventFoulSuf(freeThrows){
+  if(!S.selP || !S.selOpp) return;
+  flash('green');
+  addEvent({type:'foul_suf', payload:{myPlayer:S.selP, oppPlayer:S.selOpp, freeThrows:!!freeThrows}});
+  closeModal('modalFoulSuf');
+  if(freeThrows) openFT();
+}
+
+/* shot */
+function addEventShot(made){
+  if(!S.selP || S.shotX===null) return;
+  addEvent({type:'shot', payload:{player:S.selP, val:S.shotVal, made:!!made, x:S.shotX, y:S.shotY}});
+  flash(made?'green':'red');
+  closeShotModal();
+}
+
+/* ft */
+function openFT(){ if(!S.selP) return; $('ftSeq').textContent=''; openModal('modalFT'); }
+function addEventFT(made){
+  if(!S.selP) return;
+  addEvent({type:'ft', payload:{player:S.selP, made:!!made}});
+  flash(made?'green':'red');
+  $('ftSeq').textContent += made?'✅':'❌';
+}
+
+/* sub */
+function openSub(autoOut=null){
+  if(S.status!=='playing') return;
+  subAutoOut=autoOut?String(autoOut):null;
+  $('subTime').value='';
+  buildSubGrids();
+  updSubBtn();
+  openModal('modalSub');
+}
+
+function buildSubGrids(){
+  const out=$('outGrid'), inn=$('inGrid'); out.innerHTML=''; inn.innerHTML='';
+  S.myRoster.forEach(pl=>{
+    const n=pl.num;
+    const st=S.p[n];
+    const b=document.createElement('button');
+    b.className='player-card'; b.dataset.num=n;
+    b.innerHTML=`<div class="pname">${esc(pl.name||'')}</div><div class="pnum">${esc(n)}</div><div class="bf">${st.fouls}</div>`;
+    const disabledIn=(st.fouls>=5)||S.expelled.has(n);
+    if(S.inC.includes(n)){
+      if(subAutoOut && n===subAutoOut) b.classList.add('sel');
+      b.onclick=()=>{ b.classList.toggle('sel'); updSubBtn(); };
+      out.appendChild(b);
+    }else{
+      if(disabledIn) b.classList.add('dis');
+      else b.onclick=()=>{ b.classList.toggle('sel'); updSubBtn(); };
+      inn.appendChild(b);
+    }
+  });
+}
+
+function updSubBtn(){
+  const outSel=[...document.querySelectorAll('#outGrid .sel')].map(b=>b.dataset.num);
+  const inSel=[...document.querySelectorAll('#inGrid .sel')].map(b=>b.dataset.num);
+  const p=parseMSS($('subTime').value);
+  if($('subTime').value!==p.digits) $('subTime').value=p.digits;
+  const ok=(outSel.length>0 && outSel.length===inSel.length && p.ok);
+  const b=$('btnConfirmSub');
+  b.disabled=!ok;
+  b.style.background=ok?css('--g'):'grey';
+}
+$('subTime')?.addEventListener?.('input',updSubBtn);
+
+function addEventSub(){
+  const outSel=[...document.querySelectorAll('#outGrid .sel')].map(b=>b.dataset.num);
+  const inSel=[...document.querySelectorAll('#inGrid .sel')].map(b=>b.dataset.num);
+  const p=parseMSS($('subTime').value);
+  if(!p.ok) return;
+  addEvent({type:'sub', payload:{nQ:S.nQ, remSec:p.rem, outs:outSel, ins:inSel}});
+  closeModal('modalSub');
+}
+
+/* special fouls */
+function openSpecialFoul(){
+  Spec={ type:'T', selHome:new Set(), selAway:new Set(), benchHome:false, benchAway:false };
+  setSpecialType('T');
+  renderSpecialGrids();
+  updateSpecOk();
+  openModal('modalSpecial');
+}
+
+function setSpecialType(t){
+  Spec.type=t;
+  $('tabT').classList.toggle('act',t==='T');
+  $('tabU').classList.toggle('act',t==='U');
+  $('tabD').classList.toggle('act',t==='D');
+
+  // bench selectable only for T and D
+  const benchAllowed = (t==='T' || t==='D');
+  $('benchHomeBtn').style.opacity = benchAllowed? '1':'0.35';
+  $('benchAwayBtn').style.opacity = benchAllowed? '1':'0.35';
+
+  if(!benchAllowed){ Spec.benchHome=false; Spec.benchAway=false; }
+  updateSpecOk();
+}
+
+function toggleBench(team){
+  // only for T or D
+  if(!(Spec.type==='T' || Spec.type==='D')) return;
+  if(team==='Home') Spec.benchHome=!Spec.benchHome;
+  if(team==='Away') Spec.benchAway=!Spec.benchAway;
+  updateSpecOk();
+}
+
+function renderSpecialGrids(){
+  const hg=$('specHomeGrid'), ag=$('specAwayGrid');
+  hg.innerHTML=''; ag.innerHTML='';
+  const myIsHome=(S.noi==='Home');
+
+  function addBtn(grid, who, num, name, disabled){
+    const b=document.createElement('button');
+    b.className='player-card';
+    b.dataset.who=who;
+    b.dataset.num=num;
+    const sym = (who==='my') ? (S.p[num]?.specials||[]).join('') : (S.opp[num]?.specials||[]).join('');
+    const fouls = (who==='my') ? (S.p[num]?.fouls||0) : (S.opp[num]?.fouls||0);
+    b.innerHTML=`<div class="pname">${esc(name||'')}</div><div class="pnum">${esc(num)}</div><div class="bmid">${esc(sym)}</div><div class="bf">${fouls}</div>`;
+    if(disabled) b.classList.add('dis');
+    else b.onclick=()=>{
+      const set = (grid===hg)?Spec.selHome:Spec.selAway;
+      if(set.has(num)){ set.delete(num); b.classList.remove('sel'); }
+      else { set.add(num); b.classList.add('sel'); }
+      updateSpecOk();
+    };
+    grid.appendChild(b);
+  }
+
+  // HOME grid and AWAY grid must show HOME team and AWAY team
+  if(myIsHome){
+    // HOME = my
+    S.myRoster.forEach(pl=>{
+      const n=pl.num;
+      const dis=(S.p[n].fouls>=5)||S.expelled.has(n);
+      addBtn(hg,'my',n,pl.name,dis);
+    });
+    // AWAY = opp
+    S.oppRoster.forEach(n=>{
+      const st=S.opp[n];
+      const dis=(st.fouls>=5)||st.expelled;
+      addBtn(ag,'opp',n,'',dis);
+    });
+  }else{
+    // HOME = opp
+    S.oppRoster.forEach(n=>{
+      const st=S.opp[n];
+      const dis=(st.fouls>=5)||st.expelled;
+      addBtn(hg,'opp',n,'',dis);
+    });
+    // AWAY = my
+    S.myRoster.forEach(pl=>{
+      const n=pl.num;
+      const dis=(S.p[n].fouls>=5)||S.expelled.has(n);
+      addBtn(ag,'my',n,pl.name,dis);
+    });
+  }
+}
+
+function updateSpecOk(){
+  const any = (Spec.selHome.size+Spec.selAway.size)>0 || Spec.benchHome || Spec.benchAway;
+  const b=$('btnSpecOk');
+  b.disabled=!any;
+  b.style.background=any?css('--g'):'grey';
+
+  // bench button visual
+  const bh=$('benchHomeBtn'), ba=$('benchAwayBtn');
+  const allowBench = (Spec.type==='T' || Spec.type==='D');
+  if(bh){
+    bh.classList.toggle('active-in', !!Spec.benchHome);
+    bh.disabled=!allowBench;
+    bh.style.opacity=allowBench? '1':'0.35';
+  }
+  if(ba){
+    ba.classList.toggle('active-in', !!Spec.benchAway);
+    ba.disabled=!allowBench;
+    ba.style.opacity=allowBench? '1':'0.35';
+  }
+}
+
+function addEventSpecial(){
+  if($('btnSpecOk').disabled) return;
+  const myIsHome=(S.noi==='Home');
+  const targets=[];
+
+  if(Spec.benchHome) targets.push({team:'bench_home'});
+  if(Spec.benchAway) targets.push({team:'bench_away'});
+
+  // home grid is HOME team
+  for(const n of Spec.selHome){
+    if(myIsHome) targets.push({team:'my', num:n, kind:Spec.type});
+    else targets.push({team:'opp', num:n, kind:Spec.type});
+  }
+  for(const n of Spec.selAway){
+    if(myIsHome) targets.push({team:'opp', num:n, kind:Spec.type});
+    else targets.push({team:'my', num:n, kind:Spec.type});
+  }
+
+  addEvent({type:'special_foul', payload:{kind:Spec.type, targets}});
+  closeModal('modalSpecial');
+}
+
+/* ===================== CHECK FALLI ===================== */
+function refreshFoulsCheck(){
+  $('cfHomeName').textContent=S.nameH;
+  $('cfAwayName').textContent=S.nameA;
+  $('cfHome').textContent=S.fH;
+  $('cfAway').textContent=S.fA;
+  $('cfTeams').textContent=`${S.nameH} ${S.fH} — ${S.nameA} ${S.fA}`;
+
+  const mkRow = (fouls, num, name, sym, expelled)=>{
+    const fTxt = expelled ? 'ESP' : String(fouls||0);
+    const namePart = name ? ` ${esc(name)}` : '';
+    const symTxt = sym ? `<span style="color:var(--y);font-weight:1000;margin-left:10px">${esc(sym)}</span>` : '';
+    return `
+      <div class="ev-item" style="display:flex;align-items:center;gap:12px">
+        <div style="min-width:38px;text-align:center;color:#ff4444;font-weight:1000;font-size:18px">${esc(fTxt)}</div>
+        <div style="flex:1;font-weight:1000">${num?('#'+esc(num)):'<span class="muted2">PANCHINA</span>'}${namePart}${symTxt}</div>
+      </div>
+    `;
+  };
+
+  // Mia squadra e avversari: sempre in sezioni separate
+  const my=$('cfMyList'); my.innerHTML='';
+  const rows=S.myRoster.map(pl=>{
+    const st=S.p[pl.num]; 
+    return {num:pl.num,name:pl.name||'',f:st.fouls||0,sym:(st.specials||[]).join(''),exp:S.expelled.has(pl.num)};
+  }).filter(x=>x.f>0||x.sym||x.exp).sort((a,b)=>(b.exp-a.exp)||(b.f-a.f));
+
+  // Bench specials (solo simbolo)
+  const benchMySym = (S.noi==='Home') ? (S._benchHomeSym||'') : (S._benchAwaySym||'');
+  if(benchMySym) my.innerHTML += mkRow('', '', '', benchMySym, false);
+
+  if(!rows.length && !benchMySym){
+    my.innerHTML=`<div class="ev-item"><div class="muted">Nessun fallo registrato</div></div>`;
+  }else{
+    rows.forEach(x=>{ my.innerHTML += mkRow(x.f,x.num,x.name,x.sym,x.exp); });
+  }
+
+  const op=$('cfOppList'); op.innerHTML='';
+  const orows=S.oppRoster.map(n=>{
+    const st=S.opp[n]; return {num:n,f:st.fouls||0,sym:(st.specials||[]).join(''),exp:!!st.expelled};
+  }).filter(x=>x.f>0||x.sym||x.exp).sort((a,b)=>(b.exp-a.exp)||(b.f-a.f));
+
+  const benchOppSym = (S.noi==='Home') ? (S._benchAwaySym||'') : (S._benchHomeSym||'');
+  if(benchOppSym) op.innerHTML += mkRow('', '', '', benchOppSym, false);
+
+  if(!orows.length && !benchOppSym){
+    op.innerHTML=`<div class="ev-item"><div class="muted">Nessun fallo registrato</div></div>`;
+  }else{
+    orows.forEach(x=>{ op.innerHTML += mkRow(x.f,x.num,'',x.sym,x.exp); });
+  }
+}
+
+/* ===================== STATS LIVE ===================== */
+function minsByPlayer(){
+  const m={}; S.myRoster.forEach(pl=>m[pl.num]=0);
+  const stints=S.stints||[];
+  for(const s of stints){
+    if(m[s.player]==null) m[s.player]=0;
+    const out=(s.outRem===null)?0:s.outRem;
+    m[s.player]+=Math.max(0,(s.inRem||0)-out);
+  }
+  return m;
+}
+function pointsFor(sel){
+  if(sel==='ALL'){ let tot=0; S.myRoster.forEach(pl=>tot+=(S.p[pl.num]?.pts||0)); return tot; }
+  return S.p[String(sel)]?.pts||0;
+}
+function minsFor(sel){
+  const m=minsByPlayer();
+  if(sel==='ALL') return null; // hide in squadra
+  return m[String(sel)]||0;
+}
+function aggStats(sel){
+  const only=(sel && sel!=='ALL')?String(sel):null;
+  const players=only?[only]:S.myRoster.map(pl=>pl.num);
+  const a={twoM:0,twoA:0,threeM:0,threeA:0,ftM:0,ftA:0,foulMade:0,foulSuf:0,to:0,stl:0,ro:0,rd:0,shots:[]};
+  for(const pnum of players){
+    const st=S.p[pnum]; if(!st) continue;
+    a.twoM+=st.twoM; a.twoA+=st.twoA;
+    a.threeM+=st.threeM; a.threeA+=st.threeA;
+    a.ftM+=st.ftM; a.ftA+=st.ftA;
+    a.foulMade+=st.foulMade; a.foulSuf+=st.foulSuf;
+    a.to+=st.to; a.stl+=st.stl; a.ro+=st.ro; a.rd+=st.rd;
+  }
+  a.shots=(S.shots||[]).filter(s=>only? s.player===only : true);
+  return a;
+}
+function clearC(cv){ cv.getContext('2d').clearRect(0,0,cv.width,cv.height); }
+function drawHeat(shots){
+  const cv=$('heatCanvas'),ctx=cv.getContext('2d'); clearC(cv);
+  const cell=22,cols=Math.ceil(cv.width/cell),rows=Math.ceil(cv.height/cell);
+  const grid=[...Array(rows)].map(()=>Array(cols).fill(0));
+  shots.forEach(s=>{
+    const x=+s.x,y=+s.y; if(!isFinite(x)||!isFinite(y)) return;
+    const c=Math.min(cols-1,Math.max(0,Math.floor(x/cell)));
+    const r=Math.min(rows-1,Math.max(0,Math.floor(y/cell)));
+    grid[r][c]++;
+  });
+  let mx=0; grid.forEach(r=>r.forEach(v=>mx=Math.max(mx,v)));
+  if(mx===0) return;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    const v=grid[r][c]; if(!v) continue;
+    const t=v/mx; const a=.12+.55*t;
+    ctx.fillStyle=`rgba(255,152,0,${a})`;
+    ctx.fillRect(c*cell,r*cell,cell,cell);
+  }
+}
+function drawChart(shots){
+  const cv=$('shotCanvas'),ctx=cv.getContext('2d'); clearC(cv);
+  shots.forEach(s=>{
+    const x=+s.x,y=+s.y; if(!isFinite(x)||!isFinite(y)) return;
+    if(s.made){
+      ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
+      ctx.fillStyle="rgba(40,167,69,.9)"; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle="rgba(255,255,255,.9)"; ctx.stroke();
+    }else{
+      ctx.lineWidth=3; ctx.strokeStyle="rgba(220,53,69,.95)";
+      ctx.beginPath();
+      ctx.moveTo(x-6,y-6); ctx.lineTo(x+6,y+6);
+      ctx.moveTo(x+6,y-6); ctx.lineTo(x-6,y+6);
+      ctx.stroke();
+    }
+  });
+}
+function buildStatsSelector(){
+  const c=$('statsSelector'); c.innerHTML='';
+  const mk=(key,label,small)=>{
+    const b=document.createElement('button');
+    b.className='selbtn'+(statsSel===key?' act':'');
+    b.innerHTML= small ? `<small>${esc(small)}</small>${esc(label)}` : esc(label);
+    b.onclick=()=>{ statsSel=key; renderStats(); };
+    c.appendChild(b);
+  };
+  mk('ALL','SQUADRA','');
+  S.myRoster.forEach(pl=>{
+    mk(pl.num, `#${pl.num}`, (pl.name||'').toUpperCase());
+  });
+}
+function renderStats(){
+  buildStatsSelector();
+  const st=aggStats(statsSel);
+  $('k2').textContent=`${st.twoM}/${st.twoA}`; $('k2p').textContent=pct(st.twoM,st.twoA);
+  $('k3').textContent=`${st.threeM}/${st.threeA}`; $('k3p').textContent=pct(st.threeM,st.threeA);
+  $('kft').textContent=`${st.ftM}/${st.ftA}`; $('kftp').textContent=pct(st.ftM,st.ftA);
+  $('kfmade').textContent=st.foulMade;
+  $('kfsuf').textContent=st.foulSuf;
+  $('kto').textContent=st.to;
+  $('kstl').textContent=st.stl;
+  $('kro').textContent=st.ro;
+  $('krd').textContent=st.rd;
+
+  $('ptsSel').textContent=pointsFor(statsSel);
+
+  const m=minsFor(statsSel);
+  if(m===null){ $('minsBox').style.display='none'; }
+  else { $('minsBox').style.display='block'; $('minSel').textContent=fmt(m); }
+
+  drawHeat(st.shots);
+  drawChart(st.shots);
+}
+function openStats(){ statsSel='ALL'; renderStats(); openModal('modalStats'); }
+
+/* ===================== EVENTS LIST + FILTERS + EDIT ===================== */
+const EV_FILTERS=[
+  {key:'ALL', label:'TUTTI'},
+  {key:'shot', label:'TIRI'},
+  {key:'ft', label:'LIBERI'},
+  {key:'foul', label:'FALLI'},
+  {key:'special_foul', label:'SPECIALI'},
+  {key:'sub', label:'CAMBI'},
+  {key:'misc', label:'ALTRO'}
+];
+let evFilter='ALL';
+
+function openEvents(){
+  renderEvents();
+  openModal('modalEvents');
+}
+
+function formatEvent(ev){
+  const t=ev.type, p=ev.payload||{};
+  if(t==='start_period') return {title:`Inizio ${p.nQ>4?'OT':('Q'+p.nQ)}`, sub:`Quintetto: ${(p.lineup||[]).join(', ')}`};
+  if(t==='end_period') return {title:`Fine ${p.nQ>4?'OT':('Q'+p.nQ)}`, sub:`Azione: ${p.action}`};
+  if(t==='opp_point') return {title:`Punti avversari +${p.value}`, sub:`-`};
+  if(t==='timeout') return {title:`Timeout ${p.team==='Home'?S.nameH:S.nameA}`, sub:`-`};
+  if(t==='quick') return {title:`${p.kind} (#${p.player})`, sub:`-`};
+  if(t==='foul_made') return {title:`Fallo fatto #${p.player}`, sub:`Conta fallo personale + squadra`};
+  if(t==='foul_suf') return {title:`Fallo subito (#${p.myPlayer})`, sub:`Da avv #${p.oppPlayer} • ${p.freeThrows?'LIBERI':'RIMESSA'}`};
+  if(t==='shot') return {title:`Tiro ${p.val} #${p.player} (${p.made?'✅':'❌'})`, sub:`x:${p.x}, y:${p.y}`};
+  if(t==='ft') return {title:`Libero #${p.player} (${p.made?'✅':'❌'})`, sub:`-`};
+  if(t==='sub') return {title:`Cambio ${p.nQ>4?'OT':('Q'+p.nQ)} a ${fmt(p.remSec)}`, sub:`OUT: ${(p.outs||[]).join(', ')} • IN: ${(p.ins||[]).join(', ')}`};
+  if(t==='special_foul'){
+    const kind=p.kind==='T'?'TECNICO':(p.kind==='U'?'ANTISPORTIVO':'ESPULSIONE');
+    const list=(p.targets||[]).map(x=>{
+      if(x.team==='my') return `MY #${x.num}`;
+      if(x.team==='opp') return `OPP #${x.num}`;
+      if(x.team==='bench_home') return `PANCHINA CASA`;
+      if(x.team==='bench_away') return `PANCHINA OSPITE`;
+      return '?';
+    }).join(' • ');
+    return {title:`Fallo speciale: ${kind}`, sub:list||'-'};
+  }
+  return {title:t, sub:JSON.stringify(p)};
+}
+
+function eventMatchesFilter(ev){
+  if(evFilter==='ALL') return true;
+  if(evFilter==='shot') return ev.type==='shot';
+  if(evFilter==='ft') return ev.type==='ft';
+  if(evFilter==='sub') return ev.type==='sub';
+  if(evFilter==='special_foul') return ev.type==='special_foul';
+  if(evFilter==='foul') return (ev.type==='foul_made'||ev.type==='foul_suf');
+  if(evFilter==='misc') return !['shot','ft','sub','special_foul','foul_made','foul_suf'].includes(ev.type);
+  return true;
+}
+
+function renderFilters(){
+  const c=$('evFilters'); c.innerHTML='';
+  EV_FILTERS.forEach(f=>{
+    const b=document.createElement('button');
+    b.className='fchip'+(evFilter===f.key?' act':'');
+    b.textContent=f.label;
+    b.onclick=()=>{ evFilter=f.key; renderEvents(); };
+    c.appendChild(b);
+  });
+}
+
+function renderEvents(){
+  renderFilters();
+  const q=String($('evSearch')?.value||'').trim().toLowerCase();
+  const list=$('eventsList'); list.innerHTML='';
+  if(!S.events.length){
+    list.innerHTML=`<div class="ev-item"><div class="muted">Nessun evento registrato</div></div>`;
+    return;
+  }
+  const arr=[...S.events].reverse().filter(eventMatchesFilter).filter(ev=>{
+    if(!q) return true;
+    const f=formatEvent(ev);
+    return (f.title+' '+f.sub+' '+JSON.stringify(ev.payload)).toLowerCase().includes(q);
+  });
+
+  if(!arr.length){
+    list.innerHTML=`<div class="ev-item"><div class="muted">Nessun evento per questo filtro/ricerca</div></div>`;
+    return;
+  }
+
+  for(const ev of arr){
+    const f=formatEvent(ev);
+    const div=document.createElement('div'); div.className='ev-item';
+    div.innerHTML=`
+      <div class="ev-top">
+        <div>
+          <div class="ev-title">${esc(f.title)}</div>
+          <div class="ev-sub">${esc(f.sub)}</div>
+        </div>
+        <div class="ev-actions">
+          <button class="b1" onclick="openEdit('${ev.id}')">MOD</button>
+          <button class="b2" onclick="deleteEvent('${ev.id}')">DEL</button>
+        </div>
+      </div>
+      <div class="muted2" style="margin-top:8px;font-size:10px;font-weight:900;">ID: ${ev.id}</div>
+    `;
+    list.appendChild(div);
+  }
+}
+
+$('evSearch')?.addEventListener?.('input',()=>renderEvents());
+
+function deleteEvent(id){
+  const idx=S.events.findIndex(e=>e.id===id);
+  if(idx<0) return;
+  S.events.splice(idx,1);
+  replay();
+  autosave();
+  renderEvents();
+}
+
+/* -------- edit events --------
+   - Modifica CAMBIO: UI a bottoni (come cambio normale)
+*/
+function openEdit(id){
+  const ev=S.events.find(e=>e.id===id);
+  if(!ev) return;
+  editId=id;
+  $('editHint').textContent=formatEvent(ev).title;
+  const form=$('editForm'); form.innerHTML='';
+
+  const mkSelect=(label,id,options,value)=>{
+    const o=options.map(x=>`<option value="${esc(x.value)}"${String(x.value)===String(value)?' selected':''}>${esc(x.label)}</option>`).join('');
+    return `<div style="margin-top:10px"><div class="pill">${esc(label)}</div><select id="${esc(id)}">${o}</select></div>`;
+  };
+  const mkInput=(label,id,val,ph)=>`<div style="margin-top:10px"><div class="pill">${esc(label)}</div><input id="${esc(id)}" value="${esc(val)}" placeholder="${esc(ph||'')}"/></div>`;
+
+  if(ev.type==='sub'){
+    // build sub editor like modalSub
+    form.innerHTML=`
+      <div class="pill">Tempo rimanente (MSS)</div>
+      <input id="ed_subTime" type="tel" inputmode="numeric" maxlength="3" value="${esc(toMSS(ev.payload.remSec))}" />
+      <div class="pill" style="margin-top:10px">CHI ESCE</div>
+      <div class="grid-players" id="ed_outGrid"></div>
+      <div class="pill" style="margin-top:10px">CHI ENTRA</div>
+      <div class="grid-players" id="ed_inGrid"></div>
+      <div class="muted2" style="margin-top:8px;font-size:11px;font-weight:900">Seleziona stesso numero OUT/IN</div>
+    `;
+    setTimeout(()=>buildEditSub(ev),0);
+  } else if(ev.type==='foul_made'){
+    form.innerHTML=mkSelect('Giocatore','ed_player',S.myRoster.map(pl=>({value:pl.num,label:`#${pl.num} ${pl.name||''}`})),ev.payload.player);
+  } else if(ev.type==='shot'){
+    form.innerHTML=
+      mkSelect('Giocatore','ed_player',S.myRoster.map(pl=>({value:pl.num,label:`#${pl.num} ${pl.name||''}`})),ev.payload.player)+
+      mkSelect('Valore','ed_val',[{value:2,label:'2'},{value:3,label:'3'}],ev.payload.val)+
+      mkSelect('Esito','ed_made',[{value:'true',label:'SEGNATO'},{value:'false',label:'SBAGLIATO'}],String(!!ev.payload.made))+
+      mkInput('X','ed_x',ev.payload.x,'0-310')+
+      mkInput('Y','ed_y',ev.payload.y,'0-240');
+  } else if(ev.type==='ft'){
+    form.innerHTML=
+      mkSelect('Giocatore','ed_player',S.myRoster.map(pl=>({value:pl.num,label:`#${pl.num} ${pl.name||''}`})),ev.payload.player)+
+      mkSelect('Esito','ed_made',[{value:'true',label:'SEGNATO'},{value:'false',label:'SBAGLIATO'}],String(!!ev.payload.made));
+  } else if(ev.type==='quick'){
+    form.innerHTML=
+      mkSelect('Tipo','ed_kind',[
+        {value:'reb_def',label:'Rimbalzo Difensivo'},
+        {value:'reb_off',label:'Rimbalzo Offensivo'},
+        {value:'turnover',label:'Palla Persa'},
+        {value:'steal',label:'Palla Recuperata'}
+      ],ev.payload.kind)+
+      mkSelect('Giocatore','ed_player',S.myRoster.map(pl=>({value:pl.num,label:`#${pl.num} ${pl.name||''}`})),ev.payload.player);
+  } else if(ev.type==='opp_point'){
+    form.innerHTML=mkSelect('Valore','ed_val',[{value:1,label:'+1'},{value:2,label:'+2'},{value:3,label:'+3'}],ev.payload.value);
+  } else if(ev.type==='timeout'){
+    form.innerHTML=mkSelect('Squadra','ed_team',[{value:'Home',label:S.nameH},{value:'Away',label:S.nameA}],ev.payload.team);
+  } else if(ev.type==='foul_suf'){
+    form.innerHTML=
+      mkSelect('Mio giocatore','ed_my',S.myRoster.map(pl=>({value:pl.num,label:`#${pl.num} ${pl.name||''}`})),ev.payload.myPlayer)+
+      mkSelect('Avversario','ed_opp',S.oppRoster.map(n=>({value:n,label:`#${n}`})),ev.payload.oppPlayer)+
+      mkSelect('Esito','ed_ft',[{value:'true',label:'LIBERI'},{value:'false',label:'RIMESSA'}],String(!!ev.payload.freeThrows));
+  } else if(ev.type==='special_foul'){
+    form.innerHTML=`
+      ${mkSelect('Tipo', 'ed_kind', [{value:'T',label:'TECNICO'},{value:'U',label:'ANTISPORTIVO'},{value:'D',label:'ESPULSIONE'}], ev.payload.kind||'T')}
+      <div class="pill" style="margin-top:10px">Targets</div>
+      <div class="pill">MIA SQUADRA</div>
+      <div class="grid-players" id="ed_myGrid"></div>
+      <button id="ed_benchHome" class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleEditBench('home')">🏟️ PANCHINA CASA</button>
+      <div class="hr"></div>
+      <div class="pill">AVVERSARI</div>
+      <div class="grid-players" id="ed_oppGrid"></div>
+      <button id="ed_benchAway" class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="toggleEditBench('away')">🏟️ PANCHINA OSPITE</button>
+    `;
+    setTimeout(()=>buildEditSpecialTargets(ev),0);
+  } else {
+    form.innerHTML=`<div class="muted">Editor non disponibile per questo evento. Puoi eliminarlo e rifarlo.</div>`;
+  }
+
+  openModal('modalEdit');
+}
+
+function toMSS(remSec){
+  const s=Math.max(0,Math.floor(remSec||0));
+  const m=Math.floor(s/60);
+  const ss=s%60;
+  return String(m).slice(-1)+String(ss).padStart(2,'0');
+}
+
+function buildEditSub(ev){
+  const out=$('ed_outGrid'), inn=$('ed_inGrid');
+  out.innerHTML=''; inn.innerHTML='';
+  const selectedOut=new Set((ev.payload.outs||[]).map(String));
+  const selectedIn=new Set((ev.payload.ins||[]).map(String));
+
+  $('ed_subTime').addEventListener('input',()=>{
+    const p=parseMSS($('ed_subTime').value);
+    if($('ed_subTime').value!==p.digits) $('ed_subTime').value=p.digits;
+  });
+
+  S.myRoster.forEach(pl=>{
+    const n=pl.num;
+    const st=S.p[n];
+    // OUT
+    const bo=document.createElement('button');
+    bo.className='player-card';
+    bo.dataset.num=n;
+    bo.innerHTML=`<div class="pname">${esc(pl.name||'')}</div><div class="pnum">${esc(n)}</div><div class="bf">${st.fouls}</div>`;
+    if(!S.inC.includes(n)) bo.classList.add('dis');
+    else{
+      if(selectedOut.has(n)) bo.classList.add('sel');
+      bo.onclick=()=>{ bo.classList.toggle('sel'); };
+    }
+    out.appendChild(bo);
+
+    // IN
+    const bi=document.createElement('button');
+    bi.className='player-card';
+    bi.dataset.num=n;
+    bi.innerHTML=`<div class="pname">${esc(pl.name||'')}</div><div class="pnum">${esc(n)}</div><div class="bf">${st.fouls}</div>`;
+    const disIn = S.inC.includes(n) || st.fouls>=5 || S.expelled.has(n);
+    if(disIn) bi.classList.add('dis');
+    else{
+      if(selectedIn.has(n)) bi.classList.add('sel');
+      bi.onclick=()=>{ bi.classList.toggle('sel'); };
+    }
+    inn.appendChild(bi);
+  });
+}
+
+function buildEditSpecialTargets(ev){
+  editBenchHome=false; editBenchAway=false;
+  editSelMy=new Set(); editSelOpp=new Set();
+
+  const cur=ev.payload.targets||[];
+  for(const t of cur){
+    if(t.team==='my' && t.num) editSelMy.add(String(t.num));
+    if(t.team==='opp' && t.num) editSelOpp.add(String(t.num));
+    if(t.team==='bench_home') editBenchHome=true;
+    if(t.team==='bench_away') editBenchAway=true;
+  }
+
+  const gm=$('ed_myGrid'), go=$('ed_oppGrid');
+  gm.innerHTML=''; go.innerHTML='';
+
+  S.myRoster.forEach(pl=>{
+    const n=pl.num;
+    const b=document.createElement('button');
+    b.className='player-card';
+    b.innerHTML=`<div class="pname">${esc(pl.name||'')}</div><div class="pnum">${esc(n)}</div>`;
+    const dis=(S.p[n]?.fouls>=5)||S.expelled.has(n);
+    if(dis) b.classList.add('dis');
+    else{
+      if(editSelMy.has(n)) b.classList.add('sel');
+      b.onclick=()=>{
+        if(editSelMy.has(n)){ editSelMy.delete(n); b.classList.remove('sel'); }
+        else{ editSelMy.add(n); b.classList.add('sel'); }
+      };
+    }
+    gm.appendChild(b);
+  });
+
+  S.oppRoster.forEach(n=>{
+    const b=document.createElement('button');
+    b.className='player-card';
+    b.innerHTML=`<div class="pname">&nbsp;</div><div class="pnum">${esc(n)}</div>`;
+    const dis=(S.opp[n]?.fouls>=5)||!!S.opp[n]?.expelled;
+    if(dis) b.classList.add('dis');
+    else{
+      if(editSelOpp.has(n)) b.classList.add('sel');
+      b.onclick=()=>{
+        if(editSelOpp.has(n)){ editSelOpp.delete(n); b.classList.remove('sel'); }
+        else{ editSelOpp.add(n); b.classList.add('sel'); }
+      };
+    }
+    go.appendChild(b);
+  });
+
+  // bench enable only for T and D
+  const kind = $('ed_kind').value;
+  const benchAllowed = (kind==='T'||kind==='D');
+  $('ed_benchHome').style.opacity=benchAllowed?'1':'0.35';
+  $('ed_benchAway').style.opacity=benchAllowed?'1':'0.35';
+  if(!benchAllowed){ editBenchHome=false; editBenchAway=false; }
+}
+
+function toggleEditBench(which){
+  const kind = $('ed_kind')?.value || 'T';
+  if(!(kind==='T'||kind==='D')) return;
+  if(which==='home') editBenchHome=!editBenchHome;
+  if(which==='away') editBenchAway=!editBenchAway;
+}
+
+function saveEdit(){
+  if(!editId) return;
+  const idx=S.events.findIndex(e=>e.id===editId);
+  if(idx<0) return;
+  const ev=S.events[idx];
+
+  try{
+    if(ev.type==='sub'){
+      const p=parseMSS($('ed_subTime').value);
+      if(!p.ok) return alert('Tempo MSS non valido');
+      const outs=[...document.querySelectorAll('#ed_outGrid .sel')].map(b=>b.dataset.num);
+      const ins=[...document.querySelectorAll('#ed_inGrid .sel')].map(b=>b.dataset.num);
+      if(!outs.length || outs.length!==ins.length) return alert('Seleziona stesso numero OUT/IN');
+      ev.payload.remSec=p.rem;
+      ev.payload.outs=outs;
+      ev.payload.ins=ins;
+    } else if(ev.type==='foul_made'){
+      ev.payload.player=$('ed_player').value;
+    } else if(ev.type==='shot'){
+      ev.payload.player=$('ed_player').value;
+      ev.payload.val=Number($('ed_val').value);
+      ev.payload.made=$('ed_made').value==='true';
+      ev.payload.x=Number($('ed_x').value);
+      ev.payload.y=Number($('ed_y').value);
+    } else if(ev.type==='ft'){
+      ev.payload.player=$('ed_player').value;
+      ev.payload.made=$('ed_made').value==='true';
+    } else if(ev.type==='quick'){
+      ev.payload.kind=$('ed_kind').value;
+      ev.payload.player=$('ed_player').value;
+    } else if(ev.type==='opp_point'){
+      ev.payload.value=Number($('ed_val').value);
+    } else if(ev.type==='timeout'){
+      ev.payload.team=$('ed_team').value;
+    } else if(ev.type==='foul_suf'){
+      ev.payload.myPlayer=$('ed_my').value;
+      ev.payload.oppPlayer=$('ed_opp').value;
+      ev.payload.freeThrows=$('ed_ft').value==='true';
+    } else if(ev.type==='special_foul'){
+      const kind=$('ed_kind').value;
+      const benchAllowed=(kind==='T'||kind==='D');
+      const targets=[];
+      if(benchAllowed && editBenchHome) targets.push({team:'bench_home'});
+      if(benchAllowed && editBenchAway) targets.push({team:'bench_away'});
+      for(const n of editSelMy) targets.push({team:'my', num:n, kind});
+      for(const n of editSelOpp) targets.push({team:'opp', num:n, kind});
+      ev.payload.kind=kind;
+      ev.payload.targets=targets;
+    }
+  }catch(e){
+    alert('Errore: '+e);
+    return;
+  }
+
+  replay();
+  autosave();
+  renderEvents();
+  closeModal('modalEdit');
+  editId=null;
+}
+
+/* ===================== EXPORT EXCEL ===================== */
+function exportExcel(){
+  const mins=minsByPlayer();
+  const summary=S.myRoster.map(pl=>{
+    const n=pl.num, st=S.p[n];
+    return {
+      Numero:n, Nome:pl.name||'',
+      Punti:st.pts, Falli:st.fouls,
+      '2M':st.twoM,'2A':st.twoA,
+      '3M':st.threeM,'3A':st.threeA,
+      FTM:st.ftM, FTA:st.ftA,
+      'Falli Fatti':st.foulMade,
+      'Falli Subiti':st.foulSuf,
+      Perse:st.to, Recuperate:st.stl,
+      'Rimb Off':st.ro, 'Rimb Dif':st.rd,
+      Espulso: S.expelled.has(n) ? 'SI' : 'NO',
+      Speciali: (st.specials||[]).join(''),
+      Minuti: fmt(mins[n]||0)
+    };
+  });
+  const shots=(S.shots||[]).map(s=>({Giocatore:s.player,Valore:s.val,Esito:s.made?'SEGNATO':'SBAGLIATO',X:s.x,Y:s.y}));
+  const opp=S.oppRoster.map(n=>({Numero:n,Falli:S.opp[n]?.fouls||0,Speciali:(S.opp[n]?.specials||[]).join(''),Espulso:S.opp[n]?.expelled?'SI':'NO'}));
+  const evs=S.events.map(e=>({ID:e.id,Tipo:e.type,Payload:JSON.stringify(e.payload),TS:e.ts}));
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summary), 'MiaSquadra');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(shots), 'Tiri');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(opp), 'Avversari');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(evs), 'Eventi');
+  XLSX.writeFile(wb,'Scout.xlsx');
+}
+
+/* ===================== PDF EXPORT ===================== */
+async function exportPDF(){
+  // require libs
+  const jspdf = window.jspdf?.jsPDF;
+  if(!jspdf || !window.html2canvas){
+    alert('Librerie PDF non caricate. Serve connessione almeno la prima volta.');
+    return;
+  }
+
+  // build pages as DOM, render with html2canvas, add to jsPDF
+  const doc = new jspdf({orientation:'portrait', unit:'pt', format:'a4'});
+  const W=595.28, H=841.89;
+
+  // Helper: add DOM node as page
+  async function addNodeAsPage(node, first=false){
+    document.body.appendChild(node);
+    const canvas = await html2canvas(node, {backgroundColor:'#121212', scale:2});
+    const img = canvas.toDataURL('image/png');
+    const ratio = Math.min(W/canvas.width, H/canvas.height);
+    const w = canvas.width*ratio;
+    const h = canvas.height*ratio;
+    const x = (W-w)/2;
+    const y = 20;
+    if(!first) doc.addPage();
+    doc.addImage(img,'PNG',x,y,w,h);
+    node.remove();
+  }
+
+  // Page 1: TEAM summary + maps
+  const teamNode = buildPDFTeamPage();
+  await addNodeAsPage(teamNode, true);
+
+  // Player pages: each player with small shot chart
+  for(const pl of S.myRoster){
+    const node = buildPDFPlayerPage(pl.num);
+    await addNodeAsPage(node, false);
+  }
+
+  doc.save('Scout.pdf');
+}
+
+function buildPDFBaseContainer(title){
+  const wrap=document.createElement('div');
+  wrap.style.width='595px';
+  wrap.style.minHeight='840px';
+  wrap.style.background='#121212';
+  wrap.style.color='#fff';
+  wrap.style.fontFamily='system-ui, -apple-system, Segoe UI, Roboto, sans-serif';
+  wrap.style.padding='18px';
+
+  const h=document.createElement('div');
+  h.style.display='flex';
+  h.style.justifyContent='space-between';
+  h.style.alignItems='baseline';
+  h.innerHTML=`<div style="font-weight:1000;font-size:18px">${esc(title)}</div>
+               <div style="font-weight:900;color:#bdbdbd;font-size:12px">${esc(S.nameH)} vs ${esc(S.nameA)} • ${esc(label())}</div>`;
+  wrap.appendChild(h);
+
+  const line=document.createElement('div');
+  line.style.height='1px'; line.style.background='#2a2a2a'; line.style.margin='10px 0 14px';
+  wrap.appendChild(line);
+
+  return wrap;
+}
+
+function buildPDFTeamPage(){
+  const wrap=buildPDFBaseContainer('STATISTICHE SQUADRA');
+
+  // stats aggregation team
+  const st=aggStats('ALL');
+
+  const top=document.createElement('div');
+  top.style.display='grid';
+  top.style.gridTemplateColumns='1fr 1fr';
+  top.style.gap='10px';
+  top.innerHTML=`
+    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
+      <div style="color:#bdbdbd;font-weight:900;font-size:12px">PUNTEGGIO</div>
+      <div style="color:#ffeb3b;font-weight:1000;font-size:24px;margin-top:6px">${S.sH} - ${S.sA}</div>
+    </div>
+    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
+      <div style="color:#bdbdbd;font-weight:900;font-size:12px">FALLI DI SQUADRA</div>
+      <div style="font-weight:1000;font-size:18px;margin-top:6px">${S.fH} / ${S.fA} <span style="color:#ffeb3b">T:${S.tH}/${S.tA}</span></div>
+    </div>
+  `;
+  wrap.appendChild(top);
+
+  const box=document.createElement('div');
+  box.style.display='grid';
+  box.style.gridTemplateColumns='repeat(3,1fr)';
+  box.style.gap='10px';
+  box.style.marginTop='10px';
+  box.innerHTML=`
+    ${pdfKpi('TIRI DA 2', `${st.twoM}/${st.twoA}`, pct(st.twoM,st.twoA))}
+    ${pdfKpi('TIRI DA 3', `${st.threeM}/${st.threeA}`, pct(st.threeM,st.threeA))}
+    ${pdfKpi('LIBERI', `${st.ftM}/${st.ftA}`, pct(st.ftM,st.ftA))}
+  `;
+  wrap.appendChild(box);
+
+  const box2=document.createElement('div');
+  box2.style.display='grid';
+  box2.style.gridTemplateColumns='repeat(4,1fr)';
+  box2.style.gap='10px';
+  box2.style.marginTop='10px';
+  box2.innerHTML=`
+    ${pdfKpiSimple('FALLI FATTI', st.foulMade)}
+    ${pdfKpiSimple('FALLI SUBITI', st.foulSuf)}
+    ${pdfKpiSimple('PERSE', st.to)}
+    ${pdfKpiSimple('RECUP.', st.stl)}
+  `;
+  wrap.appendChild(box2);
+
+  const maps=document.createElement('div');
+  maps.style.display='grid';
+  maps.style.gridTemplateColumns='1fr 1fr';
+  maps.style.gap='10px';
+  maps.style.marginTop='14px';
+
+  const heat=pdfMapCard('HEATMAP', 'heatCanvas');
+  const chart=pdfMapCard('SHOT CHART', 'shotCanvas');
+  maps.appendChild(heat);
+  maps.appendChild(chart);
+  wrap.appendChild(maps);
+
+  return wrap;
+}
+
+function pdfKpi(title, value, sub){
+  return `
+  <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
+    <div style="color:#bdbdbd;font-weight:900;font-size:12px">${esc(title)}</div>
+    <div style="font-weight:1000;font-size:18px;margin-top:6px">${esc(value)}</div>
+    <div style="color:#c8c8c8;font-weight:900;font-size:12px;margin-top:6px">${esc(sub)}</div>
+  </div>`;
+}
+function pdfKpiSimple(title, value){
+  return `
+  <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
+    <div style="color:#bdbdbd;font-weight:900;font-size:12px">${esc(title)}</div>
+    <div style="font-weight:1000;font-size:18px;margin-top:6px">${esc(value)}</div>
+  </div>`;
+}
+
+function pdfMapCard(title, canvasId){
+  const card=document.createElement('div');
+  card.style.background='#101010';
+  card.style.border='1px solid #2a2a2a';
+  card.style.borderRadius='14px';
+  card.style.padding='10px';
+  card.innerHTML=`<div style="color:#bdbdbd;font-weight:900;font-size:12px;text-align:center;margin-bottom:6px">${esc(title)}</div>`;
+  const img=document.createElement('img');
+  const cv=document.getElementById(canvasId);
+  img.src=cv.toDataURL('image/png');
+  img.style.width='100%';
+  img.style.borderRadius='10px';
+  img.style.border='1px solid #2a2a2a';
+  card.appendChild(img);
+  return card;
+}
+
+function buildPDFPlayerPage(num){
+  const pl=S.myRoster.find(x=>x.num===String(num));
+  const st=aggStats(String(num));
+  const mins=minsByPlayer()[String(num)]||0;
+  const pts=S.p[String(num)]?.pts||0;
+  const sym=(S.p[String(num)]?.specials||[]).join('');
+
+  const wrap=buildPDFBaseContainer(`GIOCATORE #${num} ${pl?.name||''}`);
+
+  const top=document.createElement('div');
+  top.style.display='grid';
+  top.style.gridTemplateColumns='1fr 1fr 1fr';
+  top.style.gap='10px';
+  top.innerHTML=`
+    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
+      <div style="color:#bdbdbd;font-weight:900;font-size:12px">MINUTI</div>
+      <div style="color:#ffeb3b;font-weight:1000;font-size:18px;margin-top:6px">${fmt(mins)}</div>
+    </div>
+    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
+      <div style="color:#bdbdbd;font-weight:900;font-size:12px">PUNTI</div>
+      <div style="color:#ffeb3b;font-weight:1000;font-size:18px;margin-top:6px">${pts}</div>
+    </div>
+    <div style="background:#101010;border:1px solid #2a2a2a;border-radius:14px;padding:12px;text-align:center">
+      <div style="color:#bdbdbd;font-weight:900;font-size:12px">SPECIALI</div>
+      <div style="font-weight:1000;font-size:18px;margin-top:6px">${esc(sym||'-')}</div>
+    </div>
+  `;
+  wrap.appendChild(top);
+
+  const box=document.createElement('div');
+  box.style.display='grid';
+  box.style.gridTemplateColumns='repeat(3,1fr)';
+  box.style.gap='10px';
+  box.style.marginTop='10px';
+  box.innerHTML=`
+    ${pdfKpi('TIRI DA 2', `${st.twoM}/${st.twoA}`, pct(st.twoM,st.twoA))}
+    ${pdfKpi('TIRI DA 3', `${st.threeM}/${st.threeA}`, pct(st.threeM,st.threeA))}
+    ${pdfKpi('LIBERI', `${st.ftM}/${st.ftA}`, pct(st.ftM,st.ftA))}
+  `;
+  wrap.appendChild(box);
+
+  const box2=document.createElement('div');
+  box2.style.display='grid';
+  box2.style.gridTemplateColumns='repeat(4,1fr)';
+  box2.style.gap='10px';
+  box2.style.marginTop='10px';
+  box2.innerHTML=`
+    ${pdfKpiSimple('F. FATTI', st.foulMade)}
+    ${pdfKpiSimple('F. SUB', st.foulSuf)}
+    ${pdfKpiSimple('PERSE', st.to)}
+    ${pdfKpiSimple('RECUP.', st.stl)}
+  `;
+  wrap.appendChild(box2);
+
+  // small shot chart
+  const shots=(S.shots||[]).filter(s=>s.player===String(num));
+  const small=document.createElement('div');
+  small.style.display='grid';
+  small.style.gridTemplateColumns='1fr 1fr';
+  small.style.gap='10px';
+  small.style.marginTop='14px';
+
+  // render on temp canvases small
+  const hcv=renderMiniHeat(shots);
+  const scv=renderMiniChart(shots);
+
+  small.appendChild(pdfImgCard('HEATMAP', hcv));
+  small.appendChild(pdfImgCard('SHOT CHART', scv));
+  wrap.appendChild(small);
+
+  return wrap;
+}
+
+function pdfImgCard(title, canvas){
+  const card=document.createElement('div');
+  card.style.background='#101010';
+  card.style.border='1px solid #2a2a2a';
+  card.style.borderRadius='14px';
+  card.style.padding='10px';
+  card.innerHTML=`<div style="color:#bdbdbd;font-weight:900;font-size:12px;text-align:center;margin-bottom:6px">${esc(title)}</div>`;
+  const img=document.createElement('img');
+  img.src=canvas.toDataURL('image/png');
+  img.style.width='100%';
+  img.style.borderRadius='10px';
+  img.style.border='1px solid #2a2a2a';
+  card.appendChild(img);
+  return card;
+}
+
+function renderMiniHeat(shots){
+  const cv=document.createElement('canvas');
+  cv.width=310; cv.height=240;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#d2a679'; ctx.fillRect(0,0,cv.width,cv.height);
+  // simple heat overlay
+  const cell=22,cols=Math.ceil(cv.width/cell),rows=Math.ceil(cv.height/cell);
+  const grid=[...Array(rows)].map(()=>Array(cols).fill(0));
+  shots.forEach(s=>{
+    const x=+s.x,y=+s.y; if(!isFinite(x)||!isFinite(y)) return;
+    const c=Math.min(cols-1,Math.max(0,Math.floor(x/cell)));
+    const r=Math.min(rows-1,Math.max(0,Math.floor(y/cell)));
+    grid[r][c]++;
+  });
+  let mx=0; grid.forEach(r=>r.forEach(v=>mx=Math.max(mx,v)));
+  if(mx>0){
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      const v=grid[r][c]; if(!v) continue;
+      const t=v/mx; const a=.12+.55*t;
+      ctx.fillStyle=`rgba(255,152,0,${a})`;
+      ctx.fillRect(c*cell,r*cell,cell,cell);
+    }
+  }
+  // draw court lines (rough)
+  drawCourtLines(ctx, cv.width, cv.height);
+  return cv;
+}
+function renderMiniChart(shots){
+  const cv=document.createElement('canvas');
+  cv.width=310; cv.height=240;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='#d2a679'; ctx.fillRect(0,0,cv.width,cv.height);
+  drawCourtLines(ctx, cv.width, cv.height);
+
+  shots.forEach(s=>{
+    const x=+s.x,y=+s.y; if(!isFinite(x)||!isFinite(y)) return;
+    if(s.made){
+      ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2);
+      ctx.fillStyle="rgba(40,167,69,.9)"; ctx.fill();
+      ctx.lineWidth=2; ctx.strokeStyle="rgba(255,255,255,.9)"; ctx.stroke();
+    } else {
+      ctx.lineWidth=3; ctx.strokeStyle="rgba(220,53,69,.95)";
+      ctx.beginPath();
+      ctx.moveTo(x-6,y-6); ctx.lineTo(x+6,y+6);
+      ctx.moveTo(x+6,y-6); ctx.lineTo(x-6,y+6);
+      ctx.stroke();
+    }
+  });
+  return cv;
+}
+function drawCourtLines(ctx,w,h){
+  ctx.strokeStyle='#fff'; ctx.lineWidth=2;
+  // arc
+  ctx.beginPath();
+  ctx.arc(w/2,30,130,0,Math.PI,true);
+  ctx.stroke();
+  // paint
+  ctx.strokeRect(w/2-50,0,100,120);
+}
+
+/* ===================== SAVE/LOAD (autosave + export/import) ===================== */
+function autosave(){
+  try{
+    const data=serializeState();
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    cloudPush(data);
+  }catch(e){}
+}
+function serializeState(){
+  return {
+    version:7,
+    status:S.status,nQ:S.nQ,
+    quarterLenMin:S.quarterLenMin,otLenMin:S.otLenMin,
+    noi:S.noi,nameH:S.nameH,nameA:S.nameA,
+    myRoster:S.myRoster, oppRoster:S.oppRoster,
+    events:S.events
+  };
+}
+function loadAutosave(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(!raw) return false;
+    const d=JSON.parse(raw);
+    if(!d || !Array.isArray(d.events)) return false;
+
+    S.status='idle'; S.nQ=1;
+    S.quarterLenMin=d.quarterLenMin||10;
+    S.otLenMin=d.otLenMin||5;
+    S.noi=d.noi||'Home';
+    S.nameH=d.nameH||'CASA'; S.nameA=d.nameA||'TRASFERTA';
+    S.myRoster=d.myRoster||S.myRoster;
+    S.oppRoster=d.oppRoster||S.oppRoster;
+    S.events=d.events||[];
+
+    bootstrapRosterData();
+    renderRoster();
+    replay();
+    return true;
+  }catch(e){ return false; }
+}
+
+function exportGameJSON(){
+  const blob=new Blob([JSON.stringify(serializeState(),null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`partita_${Date.now()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+$('importFile')?.addEventListener?.('change', async (e)=>{
+  const f=e.target.files?.[0];
+  if(!f) return;
+  const txt=await f.text();
+  try{
+    const d=JSON.parse(txt);
+    if(!d || !Array.isArray(d.events)) return alert('File non valido');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+    alert('Import ok. Ricarico...');
+    location.reload();
+  }catch(err){
+    alert('Errore import: '+err);
+  }
+});
+
+/* ===================== END GAME NAV ===================== */
+function resetToSetup(){
+  // keep roster, clear events and counters
+  S.events=[];
+  S.status='idle';
+  S.nQ=1;
+  S.inC=[];
+  S.selP=null;
+  bootstrapRosterData();
+  renderRoster();
+  replay();
+  autosave();
+  openModal('modalSetup');
+}
+function resetToSetupInitial(){
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
+}
+
+/* ===================== BOOT ===================== */
+document.addEventListener('DOMContentLoaded',()=>{
+  initDefaults();
+
+  // setup inputs
+  $('quarterLenSel').value=String(S.quarterLenMin);
+  $('otLenSel').value=String(S.otLenMin);
+  $('noiSel').value=S.noi;
+  $('teamNames').value=`${S.nameH};${S.nameA}`;
+  $('myTeamInput').value=S.myRoster.map(p=>`${p.num}${p.name?','+p.name:''}`).join('\n');
+  $('oppTeamInput').value=S.oppRoster.join('\n');
+
+  setupCourt();
+  renderRoster();
+  setBtnState();
+  updateUI();
+
+  // Scout mode: ri-connessione cloud se già impostata
+  if(!IS_VIEWER){
+    try{
+      const saved = localStorage.getItem('BSP_CLOUD_GAME_ID');
+      if(saved && !CLOUD_GAME_ID){
+        CLOUD_GAME_ID = saved;
+      }
+      if(CLOUD_GAME_ID){
+        const inp = document.getElementById('cloudIdInput');
+        if(inp) inp.value = CLOUD_GAME_ID;
+        connectToCloud(CLOUD_GAME_ID);
+      }
+    }catch(e){}
+  }
+
+  // Viewer mode: connessione da URL (read-only)
+  if(IS_VIEWER){
+    // nasconde setup iniziale e blocca azioni di gioco
+    try{ closeModal('modalSetup'); closeModal('modalStartup'); }catch(e){}
+    if(CLOUD_GAME_ID){
+      connectToCloud(CLOUD_GAME_ID);
+      // disabilita azioni che modificano la partita
+      document.querySelectorAll('#azioni button').forEach(b=>{
+        const t=(b.textContent||'').toUpperCase();
+        const allow = t.includes('STAT') || t.includes('CHECK') || t.includes('EVENTI');
+        if(!allow){ b.disabled=true; b.style.opacity='0.35'; }
+      });
+    }else{
+      setSyncLabel('VIEW: nessun gameId');
+      openModal('modalSetup'); // fallback: permette setup offline se vuoi
+    }
+    return;
+  }
+
+  // Scout: se c'è autosave, proponi ripristino
+  if(hasAutosave()){
+    openModal('modalStartup');
+  }else{
+    openModal('modalSetup');
+  }
+});
+</script>
 </body>
 </html>
-
-
-
-
-
-
