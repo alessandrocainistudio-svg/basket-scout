@@ -199,6 +199,21 @@ body.noScroll{overflow:hidden;}
     </div>
     <!-- Azioni giocatore spostate nella schermata dedicata -->
 
+    <div class="row-2-1" style="margin-top:10px">
+      <button class="btnA y" onclick="if(S.selP){ openModal('modalTiro'); closeActionScreen(); }">🏀 TIRO</button>
+      <button class="btnA gry" onclick="if(S.selP){ openFT(); closeActionScreen(); }">🗑️ LIBERI</button>
+    </div>
+    <div class="row-2">
+      <button class="btnA red" onclick="if(S.selP){ addEventFoulMade(); closeActionScreen(); }">🛑 FALLO FATTO</button>
+      <button class="btnA grn" onclick="if(S.selP){ openFoulSuffered(); closeActionScreen(); }">🤝 FALLO SUBITO</button>
+    </div>
+    <div class="row-4">
+      <button class="btnA blu" onclick="if(S.selP){ addEventQuick('reb_def'); closeActionScreen(); }">⬇️ R.DIF</button>
+      <button class="btnA blu" onclick="if(S.selP){ addEventQuick('reb_off'); closeActionScreen(); }">⬆️ R.OFF</button>
+      <button class="btnA org" onclick="if(S.selP){ addEventQuick('turnover'); closeActionScreen(); }">⚠️ PERSA</button>
+      <button class="btnA lim" onclick="if(S.selP){ addEventQuick('steal'); closeActionScreen(); }">🛡️ RECUPERO</button>
+    </div>
+
 
     <div class="infoCard" style="margin-top:10px">
       Tocca un’azione per registrarla. Dopo la registrazione torni automaticamente alla schermata principale.
@@ -207,20 +222,7 @@ body.noScroll{overflow:hidden;}
 
 
   <div id="azioni">
-    <div class="row-2-1">
-      <button class="btnA y" onclick="if(S.selP) openModal('modalTiro')">🏀 TIRO</button>
-      <button class="btnA gry" onclick="if(S.selP) openFT()">🗑️ LIBERI</button>
-    </div>
-    <div class="row-2">
-      <button class="btnA red" onclick="addEventFoulMade()">🛑 FALLO FATTO</button>
-      <button class="btnA grn" onclick="if(S.selP) openFoulSuffered()">🤝 FALLO SUBITO</button>
-    </div>
-    <div class="row-4">
-      <button class="btnA blu" onclick="addEventQuick('reb_def')">⬇️ R.DIF</button>
-      <button class="btnA blu" onclick="addEventQuick('reb_off')">⬆️ R.OFF</button>
-      <button class="btnA org" onclick="addEventQuick('turnover')">⚠️ PERSA</button>
-      <button class="btnA lim" onclick="addEventQuick('steal')">🛡️ RECUPERO</button>
-    </div>
+
 
     <div class="row-2">
       <button class="btnA gry" onclick="openSub()">🔄 CAMBIO</button>
