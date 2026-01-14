@@ -151,6 +151,74 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
   font-size:16px;
 }
 body.noScroll{overflow:hidden;}
+
+/* === ACTION SCREEN GRID === */
+#actionGrid{
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  grid-template-rows: repeat(4, 1fr);
+  gap: 10px;
+  height: calc(100vh - 80px);
+}
+#actionGrid .btn{
+  font-size: 1.4rem;
+  font-weight: bold;
+  height: 100%;
+}
+#actionGrid .full{
+  grid-column: span 2;
+}
+#actionGrid .orange{
+  background:#ff9800;
+  color:#000;
+}
+
+
+/* ===== Action Screen - Big action buttons layout ===== */
+#actionScreen{
+  display:flex;
+  flex-direction:column;
+}
+#actionScreen .actionBody{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+#actionScreen .actionRow{
+  flex:1;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+#actionScreen .actionRow.row1{
+  grid-template-columns:2fr 1fr;
+}
+#actionScreen .btnA{
+  width:100%;
+  height:100%;
+  min-height:72px;
+  font-size:clamp(18px, 4.5vw, 30px);
+  font-weight:800;
+  padding:16px 14px;
+}
+#actionScreen .btnA .small{
+  font-size:0.8em;
+  font-weight:700;
+  opacity:0.9;
+}
+#actionScreen .btnA.orange{
+  background:#ff9800 !important;
+  color:#000 !important;
+}
+#actionScreen .actionFooter{
+  margin-top:10px;
+}
+@media (min-width: 700px){
+  #actionScreen{ padding:18px; }
+  #actionScreen .btnA{ min-height:96px; font-size:clamp(22px, 2.8vw, 34px); }
+}
+
 </style>
 </head>
 
@@ -198,24 +266,29 @@ body.noScroll{overflow:hidden;}
       <button class="btnA dk" onclick="closeActionScreen()">⬅️ INDIETRO</button>
     </div>
     <!-- Azioni giocatore spostate nella schermata dedicata -->
+<div class="actionBody" style="margin-top:10px">
+  <div class="actionRow row1">
+    <button class="btnA y" onclick="if(S.selP){ openModal('modalTiro'); closeActionScreen(); }">🏀 TIRO</button>
+    <button class="btnA gry" onclick="if(S.selP){ openFT(); closeActionScreen(); }">🗑️ LIBERI</button>
+  </div>
 
-    <div class="row-2-1" style="margin-top:10px">
-      <button class="btnA y" onclick="if(S.selP){ openModal('modalTiro'); closeActionScreen(); }">🏀 TIRO</button>
-      <button class="btnA gry" onclick="if(S.selP){ openFT(); closeActionScreen(); }">🗑️ LIBERI</button>
-    </div>
-    <div class="row-2">
-      <button class="btnA red" onclick="if(S.selP){ addEventFoulMade(); closeActionScreen(); }">🛑 FALLO FATTO</button>
-      <button class="btnA grn" onclick="if(S.selP){ openFoulSuffered(); closeActionScreen(); }">🤝 FALLO SUBITO</button>
-    </div>
-    <div class="row-4">
-      <button class="btnA blu" onclick="if(S.selP){ addEventQuick('reb_def'); closeActionScreen(); }">⬇️ R.DIF</button>
-      <button class="btnA blu" onclick="if(S.selP){ addEventQuick('reb_off'); closeActionScreen(); }">⬆️ R.OFF</button>
-      <button class="btnA org" onclick="if(S.selP){ addEventQuick('turnover'); closeActionScreen(); }">⚠️ PERSA</button>
-      <button class="btnA lim" onclick="if(S.selP){ addEventQuick('steal'); closeActionScreen(); }">🛡️ RECUPERO</button>
-    </div>
+  <div class="actionRow">
+    <button class="btnA red" onclick="if(S.selP){ addEventFoulMade(); closeActionScreen(); }">🛑 FALLO FATTO</button>
+    <button class="btnA grn" onclick="if(S.selP){ openFoulSuffered(); closeActionScreen(); }">🤝 FALLO SUBITO</button>
+  </div>
 
+  <div class="actionRow">
+    <button class="btnA org" onclick="if(S.selP){ addEventQuick('turnover'); closeActionScreen(); }">⚠️ PERSA</button>
+    <button class="btnA lim" onclick="if(S.selP){ addEventQuick('steal'); closeActionScreen(); }">🛡️ RECUPERO</button>
+  </div>
 
-    <div class="infoCard" style="margin-top:10px">
+  <div class="actionRow">
+    <button class="btnA blu" onclick="if(S.selP){ addEventQuick('reb_def'); closeActionScreen(); }">⬇️ R.DIF</button>
+    <button class="btnA orange" onclick="if(S.selP){ addEventQuick('reb_off'); closeActionScreen(); }">⬆️ R.OFF</button>
+  </div>
+</div>
+
+<div class="actionFooter infoCard" style="margin-top:10px">
       Tocca un’azione per registrarla. Dopo la registrazione torni automaticamente alla schermata principale.
     </div>
   </div>
