@@ -552,6 +552,10 @@ function initFirebase(){
     return false;
   }
 }
+function setSyncLabel(txt){
+  const el = document.getElementById('syncStatus');
+  if(el) el.textContent = txt;
+}
 
 
 function connectToCloud(gameId){
@@ -2406,5 +2410,6 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
 
 
