@@ -531,14 +531,23 @@ let FB_DB=null, FB_REF=null;
 function initFirebase(){
   // ✅ Incolla qui la tua config Firebase (oppure definisci window.__FIREBASE_CONFIG__ prima di questo script)
   const firebaseConfig = window.__FIREBASE_CONFIG__ || {
-    apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
-    authDomain: "basket-reggello-scout.firebaseapp.com",
-    databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "basket-reggello-scout",
-    storageBucket: "basket-reggello-scout.firebasestorage.app",
-    messagingSenderId: "395815946220",
-    appId: "1:395815946220:web:68c00b4c7f2da1754722c9"
-  };
+  apiKey: "AIzaSyAtJVAixoUVY3GMhoza7-UBnHMuKjLZjmE",
+  authDomain: "basket-reggello-scout.firebaseapp.com",
+  databaseURL: "https://basket-reggello-scout-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "basket-reggello-scout",
+  storageBucket: "basket-reggello-scout.firebasestorage.app",
+  messagingSenderId: "395815946220",
+  appId: "1:395815946220:web:68c00b4c7f2da1754722c9",
+  measurementId: "G-8DFL77TB65"
+};
+
+  // ✅ inizializza UNA VOLTA
+  if(!firebase.apps.length){
+    firebase.initializeApp(firebaseConfig);
+  }
+  FB_DB = firebase.database();
+}
+
   try{
     if(!firebase?.apps?.length) firebase.initializeApp(firebaseConfig);
     FB_DB = firebase.database();
@@ -2401,3 +2410,4 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
+
