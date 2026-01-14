@@ -128,6 +128,29 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
 
 .endActions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
 .endActions .btnW{margin-top:0}
+
+/* ===== Action Screen (mobile-first) ===== */
+#actionScreen{
+  position:fixed;
+  inset:0;
+  z-index:2500;
+  background:var(--bg);
+  padding:12px;
+  overflow:auto;
+}
+.actionHeader{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:10px;
+}
+.actionHeader .title{
+  font-weight:900;
+  letter-spacing:.4px;
+  font-size:16px;
+}
+body.noScroll{overflow:hidden;}
 </style>
 </head>
 
@@ -167,6 +190,21 @@ canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-eve
   </div>
 
   <div class="grid-players" id="rosterGrid"></div>
+
+  <!-- ACTION SCREEN (per azioni giocatore) -->
+  <div id="actionScreen" class="hidden">
+    <div class="actionHeader">
+      <div class="title">AZIONI • <span id="actionPlayerLabel">—</span></div>
+      <button class="btnA dk" onclick="closeActionScreen()">⬅️ INDIETRO</button>
+    </div>
+    <!-- Azioni giocatore spostate nella schermata dedicata -->
+
+
+    <div class="infoCard" style="margin-top:10px">
+      Tocca un’azione per registrarla. Dopo la registrazione torni automaticamente alla schermata principale.
+    </div>
+  </div>
+
 
   <div id="azioni">
     <div class="row-2-1">
@@ -810,14 +848,74 @@ function updateUI(){
 
 function selectPlayer(n){
   n=String(n);
+  if(IS_VIEWER) return; // viewer = sola lettura
   if(S.status!=='playing') return;
   if(!S.inC.includes(n)) return;
   if(S.p[n]?.fouls>=5) return;
   if(S.expelled.has(n)) return;
+
+  // selezione giocatore
   S.selP = (S.selP===n) ? null : n;
   updateUI();
+
+  // se ho appena selezionato un giocatore, apro la schermata azioni
+  if(S.selP){
+    openActionScreen(S.selP);
+  }
 }
 
+
+
+/* ===================== ACTION SCREEN ===================== */
+function getPlayerLabel(num){
+  const n=String(num);
+  const pl=(S.myRoster||[]).find(p=>String(p.num)===n);
+  if(!pl) return n;
+  const name=(pl.name||'').trim();
+  return name ? `${n} • ${name}` : n;
+}
+
+function openActionScreen(num){
+  if(IS_VIEWER) return;
+  const el=document.getElementById('actionScreen');
+  if(!el) return;
+  document.getElementById('actionPlayerLabel').textContent = getPlayerLabel(num);
+  el.classList.remove('hidden');
+  document.body.classList.add('noScroll');
+}
+
+function closeActionScreen(){
+  const el=document.getElementById('actionScreen');
+  if(!el) return;
+  el.classList.add('hidden');
+  document.body.classList.remove('noScroll');
+}
+
+function actionQuick(type){
+  if(!S.selP) return;
+  addEventQuick(type);
+  closeActionScreen();
+}
+function actionFoulMade(){
+  if(!S.selP) return;
+  addEventFoulMade();
+  closeActionScreen();
+}
+function actionFoulSuffered(){
+  if(!S.selP) return;
+  openFoulSuffered();
+  closeActionScreen();
+}
+function actionFT(){
+  if(!S.selP) return;
+  openFT();
+  closeActionScreen();
+}
+function actionShot(){
+  if(!S.selP) return;
+  openModal('modalTiro');
+  closeActionScreen();
+}
 /* ===================== PERIOD FLOW ===================== */
 function togglePeriodo(){
   if(S.status==='ended') return;
@@ -2393,6 +2491,15 @@ document.addEventListener('DOMContentLoaded',()=>{
         const allow = t.includes('STAT') || t.includes('CHECK') || t.includes('EVENTI');
         if(!allow){ b.disabled=true; b.style.opacity='0.35'; }
       });
+
+      // disabilita selezione giocatori e schermata azioni
+      document.querySelectorAll('#rosterGrid .player-card').forEach(b=>{
+        b.disabled = true;
+        b.style.opacity = '0.55';
+      });
+      const as=document.getElementById('actionScreen');
+      if(as) as.classList.add('hidden');
+
     }else{
       setSyncLabel('VIEW: nessun gameId');
       openModal('modalSetup'); // fallback: permette setup offline se vuoi
@@ -2410,6 +2517,5 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 </body>
 </html>
-
 
 
