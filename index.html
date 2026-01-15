@@ -330,18 +330,17 @@ body.noScroll{overflow:hidden;}
 </div>
 
 
-<!-- STARTUP -->
+<<!-- HOME / PARTITE -->
 <div id="modalStartup" class="modal hidden"><div class="mcard">
   <div class="topbar">
-    <h3 style="margin:0">PARTITA TROVATA 💾</h3>
-    <button class="closeTop" onclick="startNewGame()">NUOVA</button>
+    <h3 style="margin:0">PARTITE SALVATE</h3>
+    <button class="closeTop" onclick="newGameFlow()">NUOVA</button>
   </div>
-  <div class="pill">Ho trovato un salvataggio locale. Vuoi ripristinarlo?</div>
-  <button class="btnW" style="background:var(--g);color:#fff" onclick="restoreAutosave()">RIPRISTINA</button>
-  <button class="btnW" style="background:#333;color:#fff" onclick="startNewGame()">NUOVA PARTITA</button>
-  <div class="muted2" style="font-size:11px;margin-top:10px;line-height:1.25">
-    Suggerimento: usa <b>📡 LIVE LINK</b> per condividere statistiche in tempo reale.
-  </div>
+  <div class="pill">Seleziona una partita o creane una nuova (nome unico).</div>
+
+  <div id="gamesList"></div>
+
+  <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalStartup')">CHIUDI</button>
 </div></div>
 
 
@@ -602,7 +601,140 @@ body.noScroll{overflow:hidden;}
 
 <script>
 /* ===================== CORE STATE ===================== */
-const STORAGE_KEY = 'BSP_V7_AUTOSAVE';
+/* ===================== MULTI-GAME STORAGE ===================== */
+const GAMES_INDEX_KEY = 'BSP_V7_GAMES_INDEX';
+const CURRENT_GAME_ID_KEY = 'BSP_V7_CURRENT_GAME_ID';
+
+// In viewer mode può restare null (usa storage "classico")
+let CURRENT_GAME_ID = null;
+
+function storageKey(){
+  return CURRENT_GAME_ID ? ('BSP_V7_GAME_' + CURRENT_GAME_ID) : 'BSP_V7_AUTOSAVE';
+}
+
+function loadGamesIndex(){
+  try{ return JSON.parse(localStorage.getItem(GAMES_INDEX_KEY) || '[]'); }
+  catch(e){ return []; }
+}
+function saveGamesIndex(list){
+  try{ localStorage.setItem(GAMES_INDEX_KEY, JSON.stringify(list)); }catch(e){}
+}
+function normalizeGameName(name){
+  return String(name||'').trim().toLowerCase().replace(/\s+/g,' ');
+}
+function makeGameId(name){
+  const base = String(name||'').trim()
+    .replace(/[^a-z0-9]+/gi,'_')
+    .replace(/^_+|_+$/g,'')
+    .slice(0,40) || 'partita';
+  return base + '_' + Date.now();
+}
+function setCurrentGame(id){
+  CURRENT_GAME_ID = id || null;
+  try{
+    if(CURRENT_GAME_ID) localStorage.setItem(CURRENT_GAME_ID_KEY, CURRENT_GAME_ID);
+    else localStorage.removeItem(CURRENT_GAME_ID_KEY);
+  }catch(e){}
+}
+function loadCurrentGameFromStorage(){
+  try{
+    const id = localStorage.getItem(CURRENT_GAME_ID_KEY);
+    CURRENT_GAME_ID = id || null;
+  }catch(e){ CURRENT_GAME_ID = null; }
+}
+function touchCurrentGameUpdatedAt(){
+  if(!CURRENT_GAME_ID) return;
+  const games = loadGamesIndex();
+  const g = games.find(x=>x.id===CURRENT_GAME_ID);
+  if(g){
+    g.updatedAt = Date.now();
+    saveGamesIndex(games);
+  }
+}
+
+function renderHomeGames(){
+  const box = document.getElementById('gamesList');
+  if(!box) return;
+
+  const games = loadGamesIndex().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
+  if(!games.length){
+    box.innerHTML = `<div class="muted2" style="font-size:12px;line-height:1.25">
+      Nessuna partita salvata. Premi <b>NUOVA</b> per iniziare.
+    </div>`;
+    return;
+  }
+
+  box.innerHTML = games.map(g=>{
+    const when = g.updatedAt ? new Date(g.updatedAt).toLocaleString() : '';
+    return `
+      <div class="ev-item">
+        <div class="ev-top">
+          <div>
+            <div class="ev-title">${esc(g.name)}</div>
+            <div class="ev-sub">Ultimo salvataggio: ${esc(when)}</div>
+          </div>
+          <div class="ev-actions">
+            <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function newGameFlow(){
+  const name = prompt("Nome partita (unico):");
+  if(!name) return;
+
+  const norm = normalizeGameName(name);
+  const games = loadGamesIndex();
+  if(games.some(g=>g.normName===norm)){
+    alert("Esiste già una partita con questo nome ❌");
+    return;
+  }
+
+  const id = makeGameId(name);
+  games.push({
+    id,
+    name: String(name).trim(),
+    normName: norm,
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  });
+  saveGamesIndex(games);
+
+  setCurrentGame(id);
+
+  // reset stato base
+  initDefaults();
+  S.events=[];
+  S.status='idle'; S.nQ=1;
+  bootstrapRosterData();
+  renderRoster();
+  replay();
+  updateUI();
+
+  autosave(); // crea subito il salvataggio della nuova partita
+
+  closeModal('modalStartup');
+  openModal('modalSetup'); // vai al setup
+}
+
+function openGameById(id){
+  setCurrentGame(id);
+
+  const ok = loadAutosave();
+  closeModal('modalStartup');
+
+  if(ok){
+    replay();
+    updateUI();
+    setBtnState();
+  }else{
+    openModal('modalSetup');
+  }
+}
+/* ===================== /MULTI-GAME STORAGE ===================== */
 
 const S = {
   status:'idle', nQ:1,
@@ -720,7 +852,7 @@ async function copyLiveLink(){
 }
 
 function manualSave(){ autosave(); alert("Salvato ✅"); }
-function hasAutosave(){ try{ return !!localStorage.getItem(STORAGE_KEY); }catch(e){ return false; } }
+function hasAutosave(){ try{ return !!localStorage.getItem(storageKey()); }catch(e){ return false; } }
 function restoreAutosave(){ closeModal("modalStartup"); loadAutosave(); replay(); updateUI(); }
 function startNewGame(){
   try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
@@ -2550,7 +2682,9 @@ function drawCourtLines(ctx,w,h){
 function autosave(){
   try{
     const data=serializeState();
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(storageKey(), JSON.stringify(data));
+    touchCurrentGameUpdatedAt();
+    renderHomeGames(); // aggiorna lista se il popup è aperto
     cloudPush(data);
   }catch(e){}
 }
@@ -2566,7 +2700,7 @@ function serializeState(){
 }
 function loadAutosave(){
   try{
-    const raw=localStorage.getItem(STORAGE_KEY);
+    const raw=localStorage.getItem(storageKey());
     if(!raw) return false;
     const d=JSON.parse(raw);
     if(!d || !Array.isArray(d.events)) return false;
@@ -2690,15 +2824,20 @@ document.addEventListener('DOMContentLoaded',()=>{
     return;
   }
 
-  // Scout: se c'è autosave, proponi ripristino
-  if(hasAutosave()){
-    openModal('modalStartup');
-  }else{
-    openModal('modalSetup');
-  }
+  // Scout: carica ultima partita usata (se esiste) e mostra elenco
+loadCurrentGameFromStorage();
+if(CURRENT_GAME_ID){
+  loadAutosave();
+  replay();
+  updateUI();
+}
+renderHomeGames();
+openModal('modalStartup');
+  
 });
 </script>
 </body>
 </html>
+
 
 
