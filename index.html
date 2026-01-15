@@ -1433,10 +1433,31 @@ function buildOppFoulGrid(){
 function addEventFoulSuf(freeThrows){
   if(!S.selP || !S.selOpp) return;
   flash('green');
-  addEvent({type:'foul_suf', payload:{myPlayer:S.selP, oppPlayer:S.selOpp, freeThrows:!!freeThrows}});
+
+  addEvent({
+    type:'foul_suf',
+    payload:{ myPlayer:S.selP, oppPlayer:S.selOpp, freeThrows:!!freeThrows }
+  });
+
+  if(freeThrows){
+    // 1) chiudo il modal fallo subito, MA senza deselezionare
+    const prev = __DESEL_AFTER_MODAL;
+    __DESEL_AFTER_MODAL = false;
+    closeModal('modalFoulSuf');
+
+    // 2) apro i liberi con la selezione ancora valida
+    __DESEL_AFTER_MODAL = true;  // deseleziona quando chiuderai i liberi
+    openFT();                    // (oppure openModal('modalFT') se preferisci)
+
+    // (opzionale) se vuoi ripristinare esattamente il valore precedente:
+    // __DESEL_AFTER_MODAL = prev;  // ma in questo caso io lo lascerei true per i liberi
+    return;
+  }
+
+  // caso RIMESSA: chiudo normalmente (qui va bene deselezionare)
   closeModal('modalFoulSuf');
-  if(freeThrows) openFT();
 }
+
 
 /* shot */
 function addEventShot(made){
