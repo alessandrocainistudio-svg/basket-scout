@@ -2217,7 +2217,24 @@ function exportExcel(){
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(shots), 'Tiri');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(opp), 'Avversari');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(evs), 'Eventi');
-  XLSX.writeFile(wb,'Scout.xlsx');
+    // ================= Nome file dinamico =================
+  const pad2 = n => String(n).padStart(2,'0');
+  const d = new Date();
+  const dateStr = `${pad2(d.getDate())}${pad2(d.getMonth()+1)}${d.getFullYear()}`;
+
+  // pulizia nome squadre per filename
+  const slug = s => String(s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')        // spazi -> -
+    .replace(/[^a-z0-9-_]/g, ''); // rimuove caratteri non validi
+
+  const home = slug(S.nameH || 'casa');
+  const away = slug(S.nameA || 'trasferta');
+
+  const fileName = `${home}-${away}-${dateStr}.xlsx`;
+
+  XLSX.writeFile(wb, fileName);
 }
 
 /* ===================== PDF EXPORT ===================== */
