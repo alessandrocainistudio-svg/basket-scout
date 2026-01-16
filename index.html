@@ -310,6 +310,9 @@ body.noScroll{overflow:hidden;}
       <button class="btnA gry" onclick="openModal('modalFalliCheck')">🧾 CHECK FALLI</button>
       <button class="btnA blu" onclick="openStats()">📊 STAT LIVE</button>
     </div>
+    <div class="row-1">
+      <button class="btnA dk" onclick="openGamesHome()">🏠 PARTITE</button>
+    </div>
 
     <div class="row-4">
       <button class="btnA gry" onclick="undoLast()">↩️ UNDO</button>
@@ -330,7 +333,7 @@ body.noScroll{overflow:hidden;}
 </div>
 
 
-<<!-- HOME / PARTITE -->
+<!-- HOME / PARTITE -->
 <div id="modalStartup" class="modal hidden"><div class="mcard">
   <div class="topbar">
     <h3 style="margin:0">PARTITE SALVATE</h3>
@@ -652,83 +655,97 @@ function touchCurrentGameUpdatedAt(){
   }
 }
 
+function currentGameName(){
+  if(!CURRENT_GAME_ID) return '';
+  const games = loadGamesIndex();
+  const g = games.find(x=>x.id===CURRENT_GAME_ID);
+  return (g && g.name) ? String(g.name) : '';
+}
+
 function renderHomeGames(){
-  const host = document.getElementById('homeGamesList');
+  const host = document.getElementById('gamesList');
   if(!host) return;
 
-  const list = listGames();
+  const list = loadGamesIndex().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
   if(!list.length){
-    host.innerHTML = `<div class="muted2">Nessuna partita salvata.</div>`;
+    host.innerHTML = `<div class="muted2" style="font-size:12px">Nessuna partita salvata.</div>`;
     return;
   }
 
-  host.innerHTML = list.map(g=>`
-    <div class="ev-card" style="margin:8px 0">
-      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
-        <div>
-          <div style="font-weight:900">${esc(g.name||'Senza nome')}</div>
-          <div class="muted2" style="font-size:12px">Salvata: ${new Date(g.updatedAt||0).toLocaleString()}</div>
-        </div>
-
-        <div class="ev-actions" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-          <button class="b1" onclick="openGameById('${g.id}')">APRI</button>
-          <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${g.id}')">RINOMINA</button>
-          <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${g.id}')">ELIMINA</button>
+  host.innerHTML = list.map(g=>{
+    const when = g.updatedAt ? new Date(g.updatedAt).toLocaleString() : '';
+    return `
+      <div class="ev-item">
+        <div class="ev-top">
+          <div>
+            <div class="ev-title">${esc(g.name||'Senza nome')}</div>
+            <div class="ev-sub">Ultimo salvataggio: ${esc(when)}</div>
+          </div>
+          <div class="ev-actions" style="flex-wrap:wrap;justify-content:flex-end">
+            <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
+            <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${esc(g.id)}')">RINOMINA</button>
+            <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${esc(g.id)}')">ELIMINA</button>
+          </div>
         </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
-  function renameGameById(id){
+function openGamesHome(){
+  renderHomeGames();
+  openModal("modalStartup");
+}
+
+function renameGameById(id){
   id = String(id||'').trim();
-  const list = listGames();
-  const cur = list.find(g=>g.id===id);
+  const games = loadGamesIndex();
+  const cur = games.find(g=>g.id===id);
   if(!cur) return;
 
-  const oldName = cur.name || '';
-  const name = prompt('Nuovo nome partita:', oldName);
+  const name = prompt('Nuovo nome partita:', cur.name || '');
   if(name === null) return;
 
   const n = String(name).trim();
   if(!n) return alert('Nome non valido');
 
-  // blocca duplicati (ignorando maiuscole/minuscole)
-  const dup = list.some(g =>
-    g.id !== id && String(g.name||'').trim().toLowerCase() === n.toLowerCase()
-  );
+  const norm = normalizeGameName(n);
+  const dup = games.some(g => g.id !== id && g.normName === norm);
   if(dup) return alert('Esiste già una partita con questo nome.');
 
   cur.name = n;
+  cur.normName = norm;
   cur.updatedAt = Date.now();
-  saveGamesList(list);
+  saveGamesIndex(games);
   renderHomeGames();
 }
 
 function deleteGameById(id){
   id = String(id||'').trim();
-  const list = listGames();
-  const cur = list.find(g=>g.id===id);
+  const games = loadGamesIndex();
+  const cur = games.find(g=>g.id===id);
   if(!cur) return;
 
   const label = cur.name || 'Senza nome';
   if(!confirm(`Eliminare la partita "${label}"?\n\nQuesta azione non si può annullare.`)) return;
 
-  try{ localStorage.removeItem(gameDataKey(id)); }catch(e){}
+  // cancella il salvataggio della partita
+  try{ localStorage.removeItem('BSP_V7_GAME_' + id); }catch(e){}
 
-  const next = list.filter(g=>g.id!==id);
-  saveGamesList(next);
+  // rimuove dall’indice
+  const next = games.filter(g=>g.id!==id);
+  saveGamesIndex(next);
 
-  // se stavi lavorando proprio su questa partita, torna alla home
+  // se era la partita corrente, stacca la corrente e torna alla home
   if(CURRENT_GAME_ID === id){
     setCurrentGame(null);
 
-    // reset minimo dell'app
     initDefaults();
     bootstrapRosterData();
     renderRoster();
     updateUI();
 
+    renderHomeGames();
     openModal('modalStartup');
   }else{
     renderHomeGames();
@@ -873,7 +890,7 @@ function connectToCloud(gameId){
     const data=snap.val();
     if(!data || !data.state) return;
     try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data.state));
+      localStorage.setItem(storageKey(), JSON.stringify(data.state));
       loadAutosave();
       replay();
       updateUI();
@@ -908,7 +925,7 @@ function manualSave(){ autosave(); alert("Salvato ✅"); }
 function hasAutosave(){ try{ return !!localStorage.getItem(storageKey()); }catch(e){ return false; } }
 function restoreAutosave(){ closeModal("modalStartup"); loadAutosave(); replay(); updateUI(); }
 function startNewGame(){
-  try{ localStorage.removeItem(STORAGE_KEY); }catch(e){}
+  try{ localStorage.removeItem(storageKey()); }catch(e){}
   const clean = location.origin + location.pathname;
   if(location.search){ try{ history.replaceState({}, "", clean); }catch(e){} }
   closeModal("modalStartup");
@@ -1028,7 +1045,7 @@ function applySetup(){
 
 function resetAll(){
   if(!confirm('Reset totale? Cancella eventi e punteggi.')) return;
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(storageKey());
   location.reload();
 }
 
@@ -2417,7 +2434,9 @@ function exportExcel(){
   const home = slug(S.nameH || 'casa');
   const away = slug(S.nameA || 'trasferta');
 
-  const fileName = `${home}-${away}-${dateStr}.xlsx`;
+  // aggiunge anche il "Nome Partita" (quello salvato in home) per evitare nomi doppi
+  const game = slug(currentGameName() || 'partita');
+  const fileName = `${home}-${away}-${dateStr}-${game}.xlsx`;
 
   XLSX.writeFile(wb, fileName);
 }
@@ -2790,7 +2809,7 @@ $('importFile')?.addEventListener?.('change', async (e)=>{
   try{
     const d=JSON.parse(txt);
     if(!d || !Array.isArray(d.events)) return alert('File non valido');
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(d));
+    localStorage.setItem(storageKey(), JSON.stringify(d));
     alert('Import ok. Ricarico...');
     location.reload();
   }catch(err){
@@ -2813,7 +2832,7 @@ function resetToSetup(){
   openModal('modalSetup');
 }
 function resetToSetupInitial(){
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(storageKey());
   location.reload();
 }
 
@@ -2891,7 +2910,4 @@ openModal('modalStartup');
 </script>
 </body>
 </html>
-
-
-
 
