@@ -310,9 +310,6 @@ body.noScroll{overflow:hidden;}
       <button class="btnA gry" onclick="openModal('modalFalliCheck')">🧾 CHECK FALLI</button>
       <button class="btnA blu" onclick="openStats()">📊 STAT LIVE</button>
     </div>
-    <div class="row-1">
-      <button class="btnA dk" onclick="openGamesHome()">🏠 PARTITE</button>
-    </div>
 
     <div class="row-4">
       <button class="btnA gry" onclick="undoLast()">↩️ UNDO</button>
@@ -326,7 +323,8 @@ body.noScroll{overflow:hidden;}
       <button class="btnA dk" onclick="document.getElementById('importFile').click()">📂 IMPORTA</button>
       <input id="importFile" type="file" accept="application/json" class="hidden"/>
     </div>
-    <div class="row-1">
+    <div class="row-2">
+      <button class="btnA dk" onclick="openGamesHome()">🏠 PARTITE</button>
       <button class="btnA dl" onclick="exportExcel()">📥 SCARICA EXCEL</button>
     </div>
   </div>
@@ -427,6 +425,7 @@ body.noScroll{overflow:hidden;}
     <button class="btnW" style="background:#4caf50;color:#fff" onclick="exportExcel()">📥 SCARICA EXCEL</button>
     <button class="btnW" style="background:var(--y);color:#111" onclick="exportPDF()">🧾 SCARICA PDF</button>
     <button class="btnW" style="background:#222;color:#fff;border:1px solid #2e2e2e" onclick="openEvents()">🧾 EVENTI</button>
+    <button class="btnW" style="background:#111;color:#fff;border:1px solid #2e2e2e" onclick="goToGamesMenu()">🏠 PARTITE</button>
     <button class="btnW" style="background:#333;color:#fff" onclick="closeModal('modalGameOver');resetToSetup()">↩️ CHIUDI (TORNA SETUP)</button>
   </div>
 </div></div>
@@ -607,6 +606,7 @@ body.noScroll{overflow:hidden;}
 /* ===================== MULTI-GAME STORAGE ===================== */
 const GAMES_INDEX_KEY = 'BSP_V7_GAMES_INDEX';
 const CURRENT_GAME_ID_KEY = 'BSP_V7_CURRENT_GAME_ID';
+const LAST_GAME_ID_KEY = 'BSP_V7_LAST_GAME_ID';
 
 // In viewer mode può restare null (usa storage "classico")
 let CURRENT_GAME_ID = null;
@@ -635,14 +635,24 @@ function makeGameId(name){
 function setCurrentGame(id){
   CURRENT_GAME_ID = id || null;
   try{
-    if(CURRENT_GAME_ID) localStorage.setItem(CURRENT_GAME_ID_KEY, CURRENT_GAME_ID);
-    else localStorage.removeItem(CURRENT_GAME_ID_KEY);
+    if(CURRENT_GAME_ID){
+      // Per evitare conflitti tra due tab aperti: usa sessionStorage (tab-specific)
+      sessionStorage.setItem(CURRENT_GAME_ID_KEY, CURRENT_GAME_ID);
+      // Mantieni anche l'ultima partita usata per il prossimo avvio
+      localStorage.setItem(LAST_GAME_ID_KEY, CURRENT_GAME_ID);
+    }else{
+      sessionStorage.removeItem(CURRENT_GAME_ID_KEY);
+    }
   }catch(e){}
 }
 function loadCurrentGameFromStorage(){
   try{
-    const id = localStorage.getItem(CURRENT_GAME_ID_KEY);
+    // Prima prova il valore tab-specific
+    let id = sessionStorage.getItem(CURRENT_GAME_ID_KEY);
+    // Se non c'è, usa l'ultima partita usata (persistente)
+    if(!id) id = localStorage.getItem(LAST_GAME_ID_KEY) || localStorage.getItem(CURRENT_GAME_ID_KEY);
     CURRENT_GAME_ID = id || null;
+    if(CURRENT_GAME_ID) sessionStorage.setItem(CURRENT_GAME_ID_KEY, CURRENT_GAME_ID);
   }catch(e){ CURRENT_GAME_ID = null; }
 }
 function touchCurrentGameUpdatedAt(){
@@ -662,6 +672,44 @@ function currentGameName(){
   return (g && g.name) ? String(g.name) : '';
 }
 
+
+function getSavedGameMeta(gameId){
+  // Legge il salvataggio della partita e calcola: squadre, stato, punteggio
+  try{
+    const raw = localStorage.getItem('BSP_V7_GAME_' + String(gameId));
+    if(!raw) return null;
+    const d = JSON.parse(raw);
+    const nameH = d.nameH || 'CASA';
+    const nameA = d.nameA || 'TRASFERTA';
+    const status = d.status || 'idle';
+    const noi = d.noi || 'Home';
+    const myIsHome = (noi === 'Home');
+    const events = Array.isArray(d.events) ? d.events : [];
+
+    let sH = 0, sA = 0;
+    for(const ev of events){
+      const p = ev && ev.payload ? ev.payload : {};
+      if(ev.type === 'opp_point'){
+        const v = Number(p.value) || 0;
+        if(myIsHome) sA += v; else sH += v;
+      }else if(ev.type === 'shot'){
+        if(p.made){
+          const v = Number(p.val) || 2;
+          if(myIsHome) sH += v; else sA += v;
+        }
+      }else if(ev.type === 'ft'){
+        if(p.made){
+          if(myIsHome) sH += 1; else sA += 1;
+        }
+      }
+    }
+
+    return { nameH, nameA, status, sH, sA };
+  }catch(e){
+    return null;
+  }
+}
+
 function renderHomeGames(){
   const host = document.getElementById('gamesList');
   if(!host) return;
@@ -674,11 +722,27 @@ function renderHomeGames(){
 
   host.innerHTML = list.map(g=>{
     const when = g.updatedAt ? new Date(g.updatedAt).toLocaleString() : '';
+    const meta = getSavedGameMeta(g.id) || {};
+    const th = meta.nameH || 'CASA';
+    const ta = meta.nameA || 'TRASFERTA';
+    const st = meta.status || 'idle';
+    const sH = Number.isFinite(meta.sH) ? meta.sH : 0;
+    const sA = Number.isFinite(meta.sA) ? meta.sA : 0;
+
+    const ended = (st === 'ended');
+    const stLabel = ended ? 'TERMINATA' : 'IN CORSO';
+    const stColor = ended ? '#ff5252' : '#00e676';
+
     return `
       <div class="ev-item">
         <div class="ev-top">
           <div>
             <div class="ev-title">${esc(g.name||'Senza nome')}</div>
+            <div class="ev-sub">${esc(th)} - ${esc(ta)}</div>
+            <div class="ev-sub">
+              <span style="color:${stColor};font-weight:1000">${stLabel}</span>
+              <span style="color:#fff;font-weight:1000;margin-left:8px">${sH} - ${sA}</span>
+            </div>
             <div class="ev-sub">Ultimo salvataggio: ${esc(when)}</div>
           </div>
           <div class="ev-actions" style="flex-wrap:wrap;justify-content:flex-end">
@@ -1369,6 +1433,9 @@ function undoLast(){
 }
 
 function replay(){
+  // Se cambiano status o quintetto in campo, devo ricostruire la griglia giocatori
+  const __prevStatus = S.status;
+  const __prevInCKey = (S.inC||[]).map(String).join(',');
   // derived scratch
   const base={
     status:'idle', nQ:1,
@@ -1578,7 +1645,10 @@ function replay(){
 
   if(S.selP && (!S.inC.includes(S.selP) || (S.p[S.selP]?.fouls>=5) || S.expelled.has(S.selP))) S.selP=null;
 
-  updateUI();
+  const __newInCKey = (S.inC||[]).map(String).join(',');
+  const __needRosterRebuild = (__prevStatus!==S.status) || (__prevInCKey!==__newInCKey);
+  if(__needRosterRebuild) renderRoster();
+  else updateUI();
 
   if(S.status==='ended'){
     openModal('modalGameOver');
@@ -2836,6 +2906,15 @@ function resetToSetupInitial(){
   location.reload();
 }
 
+
+function goToGamesMenu(){
+  // salva lo stato (per sicurezza)
+  try{ autosave(); }catch(e){}
+  closeModal('modalGameOver');
+  renderHomeGames();
+  openModal('modalStartup');
+}
+
 /* ===================== BOOT ===================== */
 document.addEventListener('DOMContentLoaded',()=>{
   initDefaults();
@@ -2910,4 +2989,7 @@ openModal('modalStartup');
 </script>
 </body>
 </html>
+
+
+
 
