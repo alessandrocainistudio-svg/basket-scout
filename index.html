@@ -97,6 +97,32 @@ textarea{min-height:110px;resize:vertical}
 canvas.ov{position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none}
 
 .selector{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 12px}
+/* ===== STAT LIVE: Team sopra centrato + players sotto ===== */
+.selectorTeam{
+  display:flex;
+  justify-content:center;
+  margin:8px 0 10px;
+}
+
+.selectorPlayers{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:0 0 12px;
+}
+
+/* ===== Testo interno bottoni giocatori (pt verde + tempo giallo) ===== */
+.selMeta{
+  display:flex;
+  justify-content:space-between;
+  margin-top:4px;
+  font-size:11px;
+  font-weight:1000;
+}
+
+.selPts{ color:var(--g); }
+.selMin{ color:var(--y); }
+
 .selbtn{
   padding:10px;border-radius:14px;border:1px solid #2e2e2e;background:#0f0f0f;color:#fff;
   font-weight:1000;font-size:12px;text-align:center;min-height:44px;display:flex;flex-direction:column;justify-content:center
@@ -536,7 +562,9 @@ body.noScroll{overflow:hidden;}
     <button class="closeTop" onclick="closeModal('modalStats')">CHIUDI</button>
   </div>
   <div class="pill">Solo mia squadra • seleziona SQUADRA o un giocatore</div>
-  <div class="selector" id="statsSelector"></div>
+  <div class="selectorTeam" id="statsTeam"></div>
+<div class="selectorPlayers" id="statsPlayers"></div>
+
 
   <div class="grid2">
     <div class="kpi kpiY" id="minsBox"><div class="t">MINUTI</div><div class="v" id="minSel">00:00</div></div>
@@ -2057,19 +2085,49 @@ function drawChart(shots){
   });
 }
 function buildStatsSelector(){
-  const c=$('statsSelector'); c.innerHTML='';
-  const mk=(key,label,small)=>{
-    const b=document.createElement('button');
-    b.className='selbtn'+(statsSel===key?' act':'');
-    b.innerHTML= small ? `<small>${esc(small)}</small>${esc(label)}` : esc(label);
-    b.onclick=()=>{ statsSel=key; renderStats(); };
-    c.appendChild(b);
+  const teamC = $('statsTeam');
+  const plyC  = $('statsPlayers');
+  if(!teamC || !plyC) return;
+
+  teamC.innerHTML = '';
+  plyC.innerHTML  = '';
+
+  const fmtBtn = (sec)=>{
+    sec = Math.max(0, Math.floor(sec||0));
+    const m = Math.floor(sec/60);
+    const s = sec % 60;
+    return `${m}:${String(s).padStart(2,'0')}`; // es. 15:25
   };
-  mk('ALL','SQUADRA','');
+
+  const mk = (parent, key, html)=>{
+    const b = document.createElement('button');
+    b.className = 'selbtn' + (statsSel===key ? ' act' : '');
+    b.innerHTML = html;
+    b.onclick = ()=>{ statsSel = key; renderStats(); };
+    parent.appendChild(b);
+  };
+
+  // Bottone SQUADRA (da solo, centrato)
+  mk(teamC, 'ALL', 'SQUADRA');
+
+  // Bottoni giocatori (nome/numero + sotto punti e minuti)
+  const mMap = minsByPlayer();
   S.myRoster.forEach(pl=>{
-    mk(pl.num, `#${pl.num}`, (pl.name||'').toUpperCase());
+    const num = String(pl.num);
+    const pts = (S.p[num]?.pts || 0);
+    const mins = (mMap[num] || 0);
+
+    mk(plyC, pl.num, `
+      <small>${esc((pl.name||'').toUpperCase())}</small>
+      ${esc('#' + pl.num)}
+      <div class="selMeta">
+        <span class="selPts">${pts} pt</span>
+        <span class="selMin">${fmtBtn(mins)}</span>
+      </div>
+    `);
   });
 }
+
 function renderStats(){
   buildStatsSelector();
   const st=aggStats(statsSel);
