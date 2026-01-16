@@ -653,33 +653,86 @@ function touchCurrentGameUpdatedAt(){
 }
 
 function renderHomeGames(){
-  const box = document.getElementById('gamesList');
-  if(!box) return;
+  const host = document.getElementById('homeGamesList');
+  if(!host) return;
 
-  const games = loadGamesIndex().sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));
-  if(!games.length){
-    box.innerHTML = `<div class="muted2" style="font-size:12px;line-height:1.25">
-      Nessuna partita salvata. Premi <b>NUOVA</b> per iniziare.
-    </div>`;
+  const list = listGames();
+  if(!list.length){
+    host.innerHTML = `<div class="muted2">Nessuna partita salvata.</div>`;
     return;
   }
 
-  box.innerHTML = games.map(g=>{
-    const when = g.updatedAt ? new Date(g.updatedAt).toLocaleString() : '';
-    return `
-      <div class="ev-item">
-        <div class="ev-top">
-          <div>
-            <div class="ev-title">${esc(g.name)}</div>
-            <div class="ev-sub">Ultimo salvataggio: ${esc(when)}</div>
-          </div>
-          <div class="ev-actions">
-            <button class="b1" onclick="openGameById('${esc(g.id)}')">APRI</button>
-          </div>
+  host.innerHTML = list.map(g=>`
+    <div class="ev-card" style="margin:8px 0">
+      <div style="display:flex;justify-content:space-between;gap:10px;align-items:center">
+        <div>
+          <div style="font-weight:900">${esc(g.name||'Senza nome')}</div>
+          <div class="muted2" style="font-size:12px">Salvata: ${new Date(g.updatedAt||0).toLocaleString()}</div>
+        </div>
+
+        <div class="ev-actions" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          <button class="b1" onclick="openGameById('${g.id}')">APRI</button>
+          <button class="b1" style="background:#2b2b2b;color:#fff" onclick="renameGameById('${g.id}')">RINOMINA</button>
+          <button class="b1" style="background:#3a1f1f;color:#fff" onclick="deleteGameById('${g.id}')">ELIMINA</button>
         </div>
       </div>
-    `;
-  }).join('');
+    </div>
+  `).join('');
+}
+
+  function renameGameById(id){
+  id = String(id||'').trim();
+  const list = listGames();
+  const cur = list.find(g=>g.id===id);
+  if(!cur) return;
+
+  const oldName = cur.name || '';
+  const name = prompt('Nuovo nome partita:', oldName);
+  if(name === null) return;
+
+  const n = String(name).trim();
+  if(!n) return alert('Nome non valido');
+
+  // blocca duplicati (ignorando maiuscole/minuscole)
+  const dup = list.some(g =>
+    g.id !== id && String(g.name||'').trim().toLowerCase() === n.toLowerCase()
+  );
+  if(dup) return alert('Esiste già una partita con questo nome.');
+
+  cur.name = n;
+  cur.updatedAt = Date.now();
+  saveGamesList(list);
+  renderHomeGames();
+}
+
+function deleteGameById(id){
+  id = String(id||'').trim();
+  const list = listGames();
+  const cur = list.find(g=>g.id===id);
+  if(!cur) return;
+
+  const label = cur.name || 'Senza nome';
+  if(!confirm(`Eliminare la partita "${label}"?\n\nQuesta azione non si può annullare.`)) return;
+
+  try{ localStorage.removeItem(gameDataKey(id)); }catch(e){}
+
+  const next = list.filter(g=>g.id!==id);
+  saveGamesList(next);
+
+  // se stavi lavorando proprio su questa partita, torna alla home
+  if(CURRENT_GAME_ID === id){
+    setCurrentGame(null);
+
+    // reset minimo dell'app
+    initDefaults();
+    bootstrapRosterData();
+    renderRoster();
+    updateUI();
+
+    openModal('modalStartup');
+  }else{
+    renderHomeGames();
+  }
 }
 
 function newGameFlow(){
@@ -2838,6 +2891,7 @@ openModal('modalStartup');
 </script>
 </body>
 </html>
+
 
 
 
